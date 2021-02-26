@@ -27,38 +27,81 @@
                     <span class="nav-label" >首页</span>
                 </a>
             </li>
+            @foreach($menuTreeData[0] as $first_menu)
             <li>
-                <a href="#"><i class="fa fa-edit"></i>
-                    <span class="nav-label">管理员管理</span>
+                <a href="#">
+                    <i class="fa fa fa-bar-chart-o"></i>
+                    <span class="nav-label">{{$menus[$first_menu]['name']}}</span>
                     <span class="fa arrow"></span>
                 </a>
                 <ul class="nav nav-second-level">
+                    @foreach($menuTreeData[$first_menu] as $second_menu)
                     <li>
-                        <a href="#">人员管理<span class="fa arrow"></span></a>
-                        <ul class="nav nav-third-level">
-                            <li class="menu_li">
-                                <a class="J_menuItem" href="{{url('admin/User/lst')}}">人员列表</a>
-                            </li>
-                        </ul>
+                        <a class="J_menuItem" href="{{route($menus[$second_menu]['route_name'])}}">{{$menus[$second_menu]['name']}}</a>
                     </li>
-                    <li>
-                        <a href="#">角色管理<span class="fa arrow"></span></a>
-                        <ul class="nav nav-third-level">
-                            <li class="menu_li">
-                                <a class="J_menuItem" href="{{url('admin/User/lst')}}">角色列表</a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#">权限管理<span class="fa arrow"></span></a>
-                        <ul class="nav nav-third-level">
-                            <li class="menu_li">
-                                <a class="J_menuItem" href="{{url('admin/User/lst')}}">权限列表</a>
-                            </li>
-                        </ul>
-                    </li>
+                    @endforeach
                 </ul>
             </li>
+
+            @endforeach
+{{--            <li>--}}
+{{--                <a href="#">--}}
+{{--                    <i class="fa fa fa-bar-chart-o"></i>--}}
+{{--                    <span class="nav-label">角色管理</span>--}}
+{{--                    <span class="fa arrow"></span>--}}
+{{--                </a>--}}
+{{--                <ul class="nav nav-second-level">--}}
+{{--                    <li>--}}
+{{--                        <a class="J_menuItem" href="{{route('admin.role.index')}}">角色列表</a>--}}
+{{--                    </li>--}}
+{{--                </ul>--}}
+{{--            </li>--}}
+{{--            <li>--}}
+{{--                <a href="#">--}}
+{{--                    <i class="fa fa fa-bar-chart-o"></i>--}}
+{{--                    <span class="nav-label">节点管理</span>--}}
+{{--                    <span class="fa arrow"></span>--}}
+{{--                </a>--}}
+{{--                <ul class="nav nav-second-level">--}}
+{{--                    <li>--}}
+{{--                        <a class="J_menuItem" href="{{route('admin.node.index')}}">节点列表</a>--}}
+{{--                    </li>--}}
+{{--                </ul>--}}
+{{--            </li>--}}
+
+
+{{--            <li>--}}
+{{--                <a href="#"><i class="fa fa-edit"></i>--}}
+{{--                    <span class="nav-label">管理员管理</span>--}}
+{{--                    <span class="fa arrow"></span>--}}
+{{--                </a>--}}
+{{--                <ul class="nav nav-second-level">--}}
+{{--                    <li>--}}
+{{--                        <a href="#">人员管理<span class="fa arrow"></span></a>--}}
+{{--                        <ul class="nav nav-third-level">--}}
+{{--                            <li class="menu_li">--}}
+{{--                                <a class="J_menuItem" href="{{url('admin/User/lst')}}">人员列表</a>--}}
+{{--                            </li>--}}
+{{--                        </ul>--}}
+{{--                    </li>--}}
+{{--                    <li>--}}
+{{--                        <a href="#">角色管理<span class="fa arrow"></span></a>--}}
+{{--                        <ul class="nav nav-third-level">--}}
+{{--                            <li class="menu_li">--}}
+{{--                                <a class="J_menuItem" href="{{url('admin/User/lst')}}">角色列表</a>--}}
+{{--                            </li>--}}
+{{--                        </ul>--}}
+{{--                    </li>--}}
+{{--                    <li>--}}
+{{--                        <a href="#">权限管理<span class="fa arrow"></span></a>--}}
+{{--                        <ul class="nav nav-third-level">--}}
+{{--                            <li class="menu_li">--}}
+{{--                                <a class="J_menuItem" href="{{url('admin/User/lst')}}">权限列表</a>--}}
+{{--                            </li>--}}
+{{--                        </ul>--}}
+{{--                    </li>--}}
+{{--                </ul>--}}
+{{--            </li>--}}
         </ul>
     </div>
 </nav>

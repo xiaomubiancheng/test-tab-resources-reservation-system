@@ -15,6 +15,15 @@
     <link href="{{asset('static')}}/admin/css/font-awesome.min93e3.css?v=4.4.0" rel="stylesheet">
     <link href="{{asset('static')}}/admin/css/animate.min.css" rel="stylesheet">
     <link href="{{asset('static')}}/admin/css/style.min862f.css?v=4.1.0" rel="stylesheet">
+    <style>
+        *{
+            margin:0px;
+            padding: 0px;
+        }
+        .footer{
+            margin:60px -15px;
+        }
+    </style>
 </head>
 <body class="fixed-sidebar full-height-layout gray-bg" style="overflow:hidden">
 <div id="wrapper">
