@@ -1,6 +1,6 @@
 @extends('admin.layout.ucommon')
 @section('css')
-    <link rel="stylesheet" href="{{asset('static')}}/select2/select2.css">
+
 @endsection
 
 @section('content')
@@ -67,7 +67,7 @@
 @section('js')
     <script type="text/javascript" src="{{asset('static')}}/jquery-validate/dist/jquery.validate.min.js"></script>
     <script type="text/javascript" src="{{asset('static')}}/jquery-validate/dist/localization/messages_zh.js"></script>
-    <script type="text/javascript" src="{{asset('static')}}/select2/select2.js"></script>
+
     <script>
      $(".select2").select2();
 

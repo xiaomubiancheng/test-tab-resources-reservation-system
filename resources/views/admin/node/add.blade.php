@@ -74,7 +74,6 @@
     <script type="text/javascript" src="{{asset('static')}}/jquery-validate/dist/jquery.validate.min.js"></script>
     <script type="text/javascript" src="{{asset('static')}}/jquery-validate/dist/localization/messages_zh.js"></script>
     <script src="{{asset('static')}}/layer/layer.js"></script>
-    <script type="text/javascript" src="{{asset('static')}}/select2/select2.js"></script>
     <script type="text/javascript" src="{{asset('static')}}/vue/vue.js"></script>
 
     <script>

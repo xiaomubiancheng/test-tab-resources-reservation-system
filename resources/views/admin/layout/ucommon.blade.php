@@ -15,6 +15,7 @@
     <link href="{{asset('static')}}/admin/css/plugins/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
     <link href="{{asset('static')}}/admin/css/animate.min.css" rel="stylesheet">
     <link href="{{asset('static')}}/admin/css/style.min862f.css?v=4.1.0" rel="stylesheet">
+    <link rel="stylesheet" href="{{asset('static')}}/select2/select2.css">
     @yield('css')
 </head>
 <body class="gray-bg">
@@ -23,6 +24,7 @@
 <script src="{{asset('static')}}/admin/js/bootstrap.min.js?v=3.3.6"></script>
 <script src="{{asset('static')}}/admin/js/content.min.js?v=1.0.0"></script>
 <script src="{{asset('static')}}/admin/js/plugins/bootstrap-table/bootstrap-table.min.js"></script>
+<script type="text/javascript" src="{{asset('static')}}/select2/select2.js"></script>
 @yield('js')
 @include('admin.layout.msg')
 @include('admin.layout.validate')

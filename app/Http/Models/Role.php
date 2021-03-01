@@ -2,9 +2,9 @@
 
 namespace App\Http\Models;
 
-use App\Http\Models\Model as BaseModel;
+use App\Http\Models\Base;
 
-class Role extends BaseModel
+class Role extends Base
 {
     //角色和权限 多对多
     public function nodes(){

@@ -12,7 +12,8 @@ class UserController extends BaseController
     //用户列表
     public function index(){
         $data = User::get();
-        return view('admin.user.index',compact('data'));
+        $model = new User();
+        return view('admin.user.index',compact('data','model'));
     }
 
     //添加用户

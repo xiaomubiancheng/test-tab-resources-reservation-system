@@ -42,6 +42,9 @@ Route::group(['prefix'=>'admin','namespace'=>'Admin'],function (){
 
         //节点(权限)------
         Route::resource('node','NodeController');
+
+        //项目------
+        Route::resource('project','ProjectController');
     });
 
 });

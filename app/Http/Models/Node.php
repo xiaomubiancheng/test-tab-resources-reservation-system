@@ -2,9 +2,9 @@
 
 namespace App\Http\Models;
 
-use App\Http\Models\Model as BaseModel;
+use App\Http\Models\Base;
 
-class Node extends BaseModel
+class Node extends Base
 {
     public function setRouteNameAttribute($value){
         $this->attributes['route_name']=empty($value)?'':$value;

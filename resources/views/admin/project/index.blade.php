@@ -10,42 +10,46 @@
                     <div class="example-wrap">
                         <div class="example">
                             <div class="btn-group hidden-xs" id="exampleToolbar" role="group">
-{{--                                <a href="{{route('admin.user.create')}}" >--}}
-{{--                                    <button type="button" class="btn btn-outline btn-default">--}}
-{{--                                        <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>--}}
-{{--                                        添加用户--}}
-{{--                                    </button>--}}
-{{--                                </a>--}}
-                                {!! $model->addShowBtn('admin.user.create') !!}
+                                <a href="{{route('admin.project.create')}}" >
+                                    <button type="button" class="btn btn-outline btn-default">
+                                        <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>
+                                        新建项目
+                                    </button>
+                                </a>
                             </div>
-                            <table id="exampleTableToolbar" data-toggle="table" data-height="500"  data-search="true" data-pagination="true" >
+                            <table id="exampleTableToolbar" data-toggle="table" data-height="500"  data-search="true" data-pagination="true" style="word-break:break-all;" >
                                 <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>姓名</th>
-                                    <th>邮箱</th>
-                                    <th>加入时间</th>
-                                    <th>状态</th>
+                                    <th>项目名称(Project Name)</th>
+                                    <th>产品名称(Product Name)</th>
+                                    <th>市场名称(Marketing Name)</th>
+                                    <th>VPM</th>
+                                    <th>Development(before SS)启动时间</th>
+                                    <th>OS upgrade 启动时间</th>
+                                    <th>OTA(12) 启动时间</th>
+                                    <th>研发中心(Engineering Team)</th>
+                                    <th>形态(Format)</th>
                                     <th>操作</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 @foreach($data as $list)
-                                    <tr>
-                                        <td>{{$list->id}}</td>
-                                        <td>{{$list->truename}}</td>
-                                        <td>{{$list->email}}</td>
-                                        <td>{{$list->created_at->format('Y-m-d')}}</td>
-                                        <td>{{$list->deleted_at}}</td>
-                                        <td>
-                                            <a href="{{route('admin.user.edit',['id'=>$list->id])}}" class="label label-success">修改</a>
-{{--                                            <a href="{{route('admin.user.role',$list->id)}}" class="label label-primary">分配角色</a>--}}
-                                            {!! $list->assignRoleBtn('admin.user.role',$list->id) !!}
-                                            @if(auth()->id()!=$list->id)
-                                            <a href="{{route('admin.user.del',['id'=>$list->id])}}" class="label label-danger radius del">删除</a>
-                                            @endif
-                                        </td>
-                                    </tr>
+                                <tr>
+                                    <td>{{$list->name}}</td>
+                                    <td>{{$list->pdname}}</td>
+                                    <td>{{$list->mname}}</td>
+                                    <td>{{$list->vpmname}}</td>
+                                    <td>{{$list->devtime}}</td>
+                                    <td>{{$list->ostime}}</td>
+                                    <td>{{$list->otatime}}</td>
+                                    <td>{{$list->engteam}}</td>
+                                    <td>{{$list->format}}</td>
+                                    <td>
+                                        <a href="{{route('admin.project.edit',$list->id)}}" class="label label-success edit">编辑</a>
+                                        <a href="{{route('admin.project.show',$list->id)}}" class="label label-success">查看提单</a>
+                                        <a href="{{route('admin.project.destroy',$list->id)}}" class="label label-danger radius del">删除</a>
+                                    </td>
+                                </tr>
                                 @endforeach
                                 </tbody>
                             </table>
@@ -70,7 +74,7 @@
             exportDataType: 'all',            //导出方式
             exportTypes:[ 'xlsx', 'excel'],  //导出文件类型
             exportOptions: {                 //导出文件名称
-                fileName:"人员列表"
+                fileName:"项目列表"
             },
         });
 

@@ -2,10 +2,10 @@
 
 namespace App\Http\Models;
 
-use Illuminate\Database\Eloquent\Model as BaseModel;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Model extends BaseModel
+class Base extends Model
 {
     //软删除
     use SoftDeletes;

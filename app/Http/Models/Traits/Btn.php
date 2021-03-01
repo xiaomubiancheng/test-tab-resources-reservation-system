@@ -12,16 +12,16 @@ trait Btn{
         $this->auth = $auths;
     }
 
-    public function addUserBtn(string $route){
 
+    public function addShowBtn(string $route){
         if(auth::guard('user')->user()->username !=config('rbac.super') && !in_array($route,$this->auth)){
             return '';
         }
-        return '<a href="'.route($route,$this).'"> <button type="button" class="btn btn-outline btn-default">
-                                        <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>
-                                        添加用户
-                                    </button></a>';
+        return '<a href="'.route($route,$this).'"><button type="button" class="btn btn-outline btn-default"><i class="glyphicon glyphicon-plus" aria-hidden="true"></i>添加用户</button></a>';
     }
+
+
+
 
     public function assignRoleBtn(string $route){
 
