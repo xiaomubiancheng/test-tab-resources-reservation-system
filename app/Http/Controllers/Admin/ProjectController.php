@@ -109,9 +109,27 @@ class ProjectController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
-        //
+        $data = $request->except(['_token','_method']);
+        $this->validate($request,[
+            'name' => 'required|unique:projects,name,'.$id.',id',
+            'pdname' => 'required',
+            'mname' => 'required',
+            'vpm' => 'required',
+            'devtime' => 'required',
+            'ostime' => 'required',
+            'otatime' => 'required',
+            'engteam' => 'required',
+            'format' => 'required',
+        ]);
+
+        if(!Project::where([['id','=',$id]])->update($data)){
+            return redirect()->back();
+        }
+
+        return redirect(route('admin.project.index'))->with('success','项目信息修改成功');
+
     }
 
     /**
@@ -124,4 +142,7 @@ class ProjectController extends Controller
     {
         //
     }
+
+
+
 }

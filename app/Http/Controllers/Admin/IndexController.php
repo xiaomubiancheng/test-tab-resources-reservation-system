@@ -14,6 +14,8 @@ class IndexController extends Controller
         //获取用户对应的权限
         $auth = session('admin.auth');
 
+//        dd((new Node)->menuTreeData($auth));
+
         return view('admin.index.index',(new Node)->menuTreeData($auth));
     }
 

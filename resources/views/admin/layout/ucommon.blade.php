@@ -25,6 +25,7 @@
 <script src="{{asset('static')}}/admin/js/content.min.js?v=1.0.0"></script>
 <script src="{{asset('static')}}/admin/js/plugins/bootstrap-table/bootstrap-table.min.js"></script>
 <script type="text/javascript" src="{{asset('static')}}/select2/select2.js"></script>
+<script src="{{asset('static')}}/layer/layer.js"></script>
 @yield('js')
 @include('admin.layout.msg')
 @include('admin.layout.validate')

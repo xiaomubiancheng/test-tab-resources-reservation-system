@@ -45,6 +45,39 @@ Route::group(['prefix'=>'admin','namespace'=>'Admin'],function (){
 
         //项目------
         Route::resource('project','ProjectController');
+
+        //提单------------
+//        Route::resource('bill','BillController');
+        Route::get('bill/index','BillController@index')->name('bill.index');
+        //添加提单
+        Route::get('bill/add','BillController@create')->name('bill.create');
+        //添加提单处理
+        Route::post('bill/add','BillController@store')->name('bill.store');
+        //删除提单
+        Route::delete("bill/del/{id}","BillController@del")->name('bill.del');
+        //修改提单
+        Route::get('bill/edit/{id}',"BillController@edit")->name('bill.edit');
+        Route::put('bill/edit/{id}',"BillController@update")->name('bill.edit');
+        //提单结算页面
+        Route::get('bill/settle','BillController@settle')->name('bill.settle');
+
+        //获取测试内容
+        Route::post('bill/tcontent','BillController@getTypeContentById')->name('bill.tcontent');
+        //验证是否为节假日
+        Route::post('bill/isholiday','BillController@IsHoliday')->name('bill.isholiday');
+        //自动化提单推算时间
+        Route::post('bill/gettime','BillController@getWorkDay')->name('bill.gettime');
+        //自定义提单推算时间
+        Route::post('bill/getcustomtime','BillController@getCustomeWorkDay')->name('bill.getcustomtime');
+
+
+        //PCR-------------
+        Route::resource('pcr','PcrController');
+
+
+        //人力管理-------
+        Route::get('humanresource/index','HumanController@index')->name('humanresource.index');
+
     });
 
 });

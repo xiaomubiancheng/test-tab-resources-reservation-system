@@ -1,5 +1,9 @@
 @extends('admin.layout.ucommon')
 
+@section('css')
+    <link rel="stylesheet" href="{{asset('static')}}/admin/css/plugins/datapicker/datepicker3.css">
+@endsection
+
 @section('content')
     <div class="wrapper wrapper-content animated fadeIn" >
         <div class="ibox-title">
@@ -161,6 +165,8 @@
             "format":"yyyy-mm-dd",
             Highlight :true, //高亮显示
         });
+
+        $('.datepicker').datepicker('setDate', new Date());
 
         $("#devtime").change(function(){
             $("#dev_time").val($(this).val());

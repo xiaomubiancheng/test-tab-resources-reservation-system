@@ -35,15 +35,18 @@
                     <span class="fa arrow"></span>
                 </a>
                 <ul class="nav nav-second-level">
-                    @foreach($menuTreeData[$first_menu] as $second_menu)
-                    <li>
-                        <a class="J_menuItem" href="{{route($menus[$second_menu]['route_name'])}}">{{$menus[$second_menu]['name']}}</a>
-                    </li>
-                    @endforeach
+                    @if(isset($menuTreeData[$first_menu]))
+                        @foreach($menuTreeData[$first_menu] as $second_menu)
+                            <li>
+                                <a class="J_menuItem" href="{{route($menus[$second_menu]['route_name'])}}">{{$menus[$second_menu]['name']}}</a>
+                            </li>
+                        @endforeach
+                    @endif
                 </ul>
             </li>
 
             @endforeach
+
 {{--            <li>--}}
 {{--                <a href="#">--}}
 {{--                    <i class="fa fa fa-bar-chart-o"></i>--}}
@@ -52,7 +55,7 @@
 {{--                </a>--}}
 {{--                <ul class="nav nav-second-level">--}}
 {{--                    <li>--}}
-{{--                        <a class="J_menuItem" href="{{route('admin.role.index')}}">角色列表</a>--}}
+{{--                        <a class="J_menuItem" href="{{route('admin.node.index')}}">角色列表</a>--}}
 {{--                    </li>--}}
 {{--                </ul>--}}
 {{--            </li>--}}

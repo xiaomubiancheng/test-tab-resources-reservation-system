@@ -3,7 +3,7 @@
 @section('content')
     <div class="wrapper wrapper-content animated fadeIn" >
         <div class="ibox-title">
-            <h5><a href="{{route('admin.project.index')}}">项目列表</a>>项目添加:</h5>
+            <h5><a href="{{route('admin.project.index')}}">项目列表</a>>项目修改:</h5>
         </div>
         <div class="ibox-content">
             <div class="row row-lg">
@@ -11,6 +11,7 @@
                     <fieldset>
                         <legend>项目信息</legend>
                         <form action="{{route('admin.project.update',$data)}}"  class="form-horizontal" role="form"  id="form-pro-edit" method="post">
+                            @method('PUT')
                             @csrf
                             <div class="row">
                                 <div class="form-group col-sm-6">
@@ -119,23 +120,29 @@
                                         <td>
                                             <input type="number" min="0" class="form-control" value="{{$data->dev_budget}}" readonly>
                                         </td>
-                                        <td><input type="text" class="form-control" id="dev_settle" name="dev_settle"></td>
+                                        <td><input type="text" class="form-control" id="dev_settle" ></td>
                                         <td><input type="text" class="form-control" value="{{$data->devtime}}" readonly></td>
                                     </tr>
                                     <tr>
                                         <td>OS upgrade</td>
                                         <td><input type="number" min="0" class="form-control" value="{{$data->os_budget}}" readonly></td>
-                                        <td><input type="text" class="form-control" id="os_settle" name="os_settle"></td>
+                                        <td><input type="text" class="form-control" id="os_settle" ></td>
                                         <td><input type="text" class="form-control" value="{{$data->ostime}}" readonly></td>
                                     </tr>
                                     <tr>
                                         <td>OTA(12)</td>
                                         <td><input type="number" min="0" class="form-control" value="{{$data->ota_budget}}" readonly ></td>
-                                        <td><input type="text" class="form-control" id="ota_settle" name="ota_settle"></td>
+                                        <td><input type="text" class="form-control" id="ota_settle" ></td>
                                         <td><input type="text" class="form-control" value="{{$data->otatime}}" readonly></td>
                                     </tr>
                                     </tbody>
                                 </table>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="col-sm-offset-2 col-sm-10">
+                                    <button type="submit" class="btn  btn-success">提交</button>
+                                </div>
                             </div>
                         </form>
                     </fieldset>
@@ -159,8 +166,13 @@
             Highlight :true, //高亮显示
         });
 
-        $("#engteam").val({!! $data->engteam !!}).select2();
-        $("#format").val({!! $data->format !!}).select2();
+
+        var data = <?echo json_encode($data);?>
+
+
+
+        $("#engteam").val(data.engteam).select2();
+        $("#format").val(data.format).select2();
 
         $("#devtime").change(function(){
             $("#dev_time").val($(this).val());
@@ -203,18 +215,7 @@
                 format:{
                     required: true,
                     minlength:1
-                },
-                dev_budget:{
-                    required:true,
-                },
-                os_budget:{
-                    required:true,
-                },
-                ota_budget:{
-                    required:true,
                 }
-
-
             },
             messages:{
                 name:{
@@ -244,18 +245,6 @@
                 format:{
                     required: '形态(Format) 请选择',
                 },
-                dev_budget:{
-                    required:'请填写Development(before SS)预算',
-                },
-                os_budget:{
-                    required:'请填写OS upgrade预算',
-                },
-                ota_budget:{
-                    required:'请填写OTA(12)预算',
-                }
-
-
-
             },
             onkeyup:false,
             success:"valid",
