@@ -76,7 +76,16 @@ Route::group(['prefix'=>'admin','namespace'=>'Admin'],function (){
 
 
         //人力管理-------
+        //人力管理显示页面
         Route::get('humanresource/index','HumanController@index')->name('humanresource.index');
+        //
+        Route::post("hr/info",'HumanController@info')->name("hr.info");
+
+        Route::get('hr/tableinit','HumanController@tableInit')->name("hr.tableinit");
+        Route::get('hr/tableinit1','HumanController@tableInit1')->name("hr.tableinit1");
+        //人力修改
+        Route::post('hr/update','HumanController@update')->name('hr.update');
+
 
     });
 

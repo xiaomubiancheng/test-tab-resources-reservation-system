@@ -20,22 +20,8 @@
                 <div class="col-sm-12">
                     <!-- Example Toolbar -->
                     <div class="example-wrap">
-                        <div class="example">
-                            <table id="exampleTableToolbar" data-toggle="table" data-height="500"  data-pagination="true" >
-                                <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>节点名称</th>
-                                    <th>路由别名</th>
-                                    <th>是否是菜单</th>
-                                    <th>加入时间</th>
-                                    <th>操作</th>
-                                </tr>
-                                </thead>
-                                <tbody>
+                        <div class="example" id="table">
 
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 </div>
@@ -47,6 +33,7 @@
 @section('js')
     <script type="text/javascript" src="{{asset('static')}}/admin/js/plugins/datapicker/bootstrap-datepicker.js"></script>
     <script>
+        const _token = "{{csrf_token()}}";
         $(".input-daterange ").datepicker({
             autoclose: true, //自动关闭
             language:"zh-CN"
@@ -54,6 +41,136 @@
 
         $("#start").datepicker("setDate",firstDayOfMonth());
         $("#end").datepicker("setDate",nextNextMonthLastDay());
+
+        //第一次请求
+        var start = $("#start").val();
+        var end = $("#end").val();
+        var tableData=[];
+        var arr1;
+        var w_arr;
+        $.ajax({
+            async: false,
+            url:"{{route('admin.hr.info')}}",
+            data:{_token:_token,start:start,end:end},
+            type:"POST",
+            dataType:'json',
+            success:function (data) {
+                tableData = data.data;
+                w_arr = tableData.w_arr;
+                arr1 = tableData.mw_arr;
+            }
+        })
+        {{--$.post("{{route('admin.hr.info')}}",{_token:_token,start:start,end:end},function(data){--}}
+        {{--    tableData = data.data;--}}
+        {{--},'json');--}}
+
+        // $('td').click(function(){
+        //     console.log($(this));
+        // })
+
+        //查询
+        $("#search").click(function(){
+            var start = $("#start").val();
+            var end = $("#end").val();
+            $.post("{{route('admin.hr.info')}}",{_token:_token,start:start,end:end},function(data){
+
+            },'json');
+        });
+
+
+        //
+        var html = '';
+        html += `
+                <table id="human" class="table table-bordered text-center"  width="1000px;" height="350px;">
+                       <tr>
+                           <td colspan="1">月份</td>
+                `;
+
+
+
+        for(var key in arr1) {  //3
+            html += `<td colspan="${arr1[key]*2}" id="">${key}</td>`;
+        }
+
+        html += `
+        </tr>
+        <tr>
+            <td>周(工作日)</td>
+            `;
+        for(var i=0;i<w_arr.length;i++){
+            html+=`
+            <td colspan="2">${w_arr[i]}</td>
+        `;
+        }
+
+        html+=`</tr>`;
+
+        //@1
+        for(var i=0;i<6;i++){
+            html+=`<tr>`;
+            for(var j=0;j<=26;j++) {
+                if(j==0){
+                    html += `<td>CTS/人力</td>`;
+                }else{
+                    if(j%2!=0) {
+                        html += `<td   id='${j}'>1</td>`;
+                    }else{
+                        html += `<td style="color:#ccc">1</td>`;
+                    }
+                }
+            }
+
+            html+=`</tr>`;
+        }
+
+        html+=`</table>`;
+        $("#table").html(html);
+
+
+        //人力修改
+        $("td ").dblclick(function () {
+            var td = $(this);
+            // console.log(td);
+            var text = td.text();
+            var id= $(this).attr('id');
+            if(id==null){
+                return ;
+            }
+
+
+            var input = $("<input type='text'/>");
+            // console.log(td.context.clientWidth);
+            input.width(td.context.clientWidth);
+            input.height(td.context.clientHeight);
+            input.val(text);
+            td.html("");
+            input.appendTo(td).focus().select();
+            input.click(function () {
+                return false;
+            })
+
+            input.blur(function(){
+                var inputTest = $(this).val();
+                if(inputTest == text){
+                    td.html(text);
+                    return;
+                }
+                td.html(inputTest);
+                $.ajax({
+                    type:"POST",
+                    url:"{{route('admin.hr.update')}}",
+                    data:{_token:_token,id:inputTest},
+                    dataType:'json',
+                    success:function(data){
+                        if(data.status==0){
+                            layer.msg('修改成功',{icon:1});
+                        }
+                    },
+                });
+
+            })
+
+        });
 
 
 
