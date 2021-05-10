@@ -10,15 +10,15 @@
                     <div class="example-wrap">
                         <div class="example">
                             <div class="btn-group hidden-xs" id="exampleToolbar" role="group">
-{{--                                <a href="{{route('admin.user.create')}}" >--}}
-{{--                                    <button type="button" class="btn btn-outline btn-default">--}}
-{{--                                        <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>--}}
-{{--                                        添加用户--}}
-{{--                                    </button>--}}
-{{--                                </a>--}}
-                                {!! $model->addShowBtn('admin.user.create') !!}
+                                <a href="{{route('admin.user.create')}}" >
+                                    <button type="button" class="btn btn-outline btn-default">
+                                        <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>
+                                        添加用户
+                                    </button>
+                                </a>
+{{--                                {!! $model->addShowBtn('admin.user.create') !!}--}}
                             </div>
-                            <table id="exampleTableToolbar" data-toggle="table" data-height="500"  data-search="true" data-pagination="true" >
+                            <table id="user" data-toggle="table" data-height="500"  data-search="true" data-pagination="true" >
                                 <thead>
                                 <tr>
                                     <th>ID</th>
@@ -36,13 +36,19 @@
                                         <td>{{$list->truename}}</td>
                                         <td>{{$list->email}}</td>
                                         <td>{{$list->created_at->format('Y-m-d')}}</td>
-                                        <td>{{$list->deleted_at}}</td>
+                                        <td>
+                                            @if($list->deleted_at == "")
+                                                <a href="javascript:;" class="label label-success">已启用</a>
+                                            @else
+                                                <a href="javascript:;" class="label label-danger">已停用</a>
+                                            @endif
+                                        </td>
                                         <td>
                                             <a href="{{route('admin.user.edit',['id'=>$list->id])}}" class="label label-success">修改</a>
-{{--                                            <a href="{{route('admin.user.role',$list->id)}}" class="label label-primary">分配角色</a>--}}
-                                            {!! $list->assignRoleBtn('admin.user.role',$list->id) !!}
+                                            <a href="{{route('admin.user.role',$list->id)}}" class="label label-primary">分配角色</a>
+{{--                                            {!! $list->assignRoleBtn('admin.user.role',$list->id) !!}--}}
                                             @if(auth()->id()!=$list->id)
-                                            <a href="{{route('admin.user.del',['id'=>$list->id])}}" class="label label-danger radius del">删除</a>
+                                            <a href="{{route('admin.user.del',['id'=>$list->id])}}" class="label label-danger radius delb">删除</a>
                                             @endif
                                         </td>
                                     </tr>
@@ -72,12 +78,12 @@
             exportOptions: {                 //导出文件名称
                 fileName:"人员列表"
             },
+
         });
 
         const _token = "{{csrf_token()}}";
 
-        //删除
-        $('.del').click(function (evt) {
+        $("#user").on('click','.delb',function(){
             let url = $(this).attr('href');
             var that = $(this);
             layer.confirm('你确定要删除嘛', {
@@ -96,14 +102,37 @@
                     }
                 });
             }, function(){
-                return;s
+                return;
             });
-
-
-
-
             return false;
-        })
+        });
+
+        //删除  除了首页 ，后面所有 无法触发事件 加载问题
+        // $('.delb').click(function (evt) {
+        //     let url = $(this).attr('href');
+        //     var that = $(this);
+        //     layer.confirm('你确定要删除嘛', {
+        //         btn: ['确定','取消'] //按钮
+        //     }, function(evt){
+        //         $.ajax({
+        //             url,
+        //             data:{_token},
+        //             type:"DELETE",
+        //             dataType:'json'
+        //         }).then(({status,msg})=>{
+        //             if(status ==0){
+        //                 layer.msg(msg,{time:2000,icon:1},()=>{
+        //                     that.parents('tr').remove();
+        //                 });
+        //             }
+        //         });
+        //     }, function(){
+        //         return;
+        //     });
+        //     return false;
+        // })
+
+
     </script>
 @endsection
 

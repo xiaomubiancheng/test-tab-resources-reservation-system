@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
 {
+    //登录页
     public function index(){
          return view("admin.login.login");
     }
@@ -33,26 +34,24 @@ class LoginController extends Controller
            'password' => $postData['password']
        ]);
 
-       if($re) {
 
-           if(config('rbac.super') != $postData['username']){
-              $userModel = auth::guard('user')->user();
-//              $roleModel = $userModel->roles();
-               //方法一:多个角色循环取   todo....
+       if($re) {
+           //判断是否是超级管理员
+           if( config('rbac.super') != $postData['username'] ){
+              $userModel = Auth::guard('user')->user();
               $ownRoles = $userModel->roles()->pluck('id')->toArray();
               $nodeArr = Role::find($ownRoles[0])->nodes()->pluck('route_name','id')->toArray();
-//              $nodeArr = $roleModel->nodes()->pluck('route_name','id')->toArray();
               session(['admin.auth'=>$nodeArr]);
-           }else{
+           }else{ //超级管理员
                session(['admin.auth'=>true]);
            }
-
            return redirect(url('admin/index/index'));
        }else{
            return redirect(url('admin/login'))->withErrors(['error'=>'账号或密码错误']);
        }
     }
 
+    //登出
     public function logout()
     {
         Auth::guard('user')->logout();

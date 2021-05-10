@@ -20,7 +20,7 @@
                 <div class="col-sm-12">
                     <!-- Example Toolbar -->
                     <div class="example-wrap">
-                        <div class="example" id="table">
+                        <div class="example" id="table" style="overflow-x:auto;">
 
                         </div>
                     </div>
@@ -48,6 +48,7 @@
         var tableData=[];
         var arr1;
         var w_arr;
+        var rows_arr;
         $.ajax({
             async: false,
             url:"{{route('admin.hr.info')}}",
@@ -58,73 +59,81 @@
                 tableData = data.data;
                 w_arr = tableData.w_arr;
                 arr1 = tableData.mw_arr;
+                rows_arr = tableData.rows_arr;
+                html_(w_arr,arr1,rows_arr);
             }
         })
-        {{--$.post("{{route('admin.hr.info')}}",{_token:_token,start:start,end:end},function(data){--}}
-        {{--    tableData = data.data;--}}
-        {{--},'json');--}}
 
-        // $('td').click(function(){
-        //     console.log($(this));
-        // })
 
         //查询
         $("#search").click(function(){
             var start = $("#start").val();
             var end = $("#end").val();
-            $.post("{{route('admin.hr.info')}}",{_token:_token,start:start,end:end},function(data){
-
-            },'json');
+            $.ajax({
+                async: false,
+                url:"{{route('admin.hr.info')}}",
+                data:{_token:_token,start:start,end:end},
+                type:"POST",
+                dataType:'json',
+                success:function (data) {
+                    tableData = data.data;
+                    w_arr = tableData.w_arr;
+                    arr1 = tableData.mw_arr;
+                    rows_arr = tableData.rows_arr;
+                    html_(w_arr,arr1,rows_arr);
+                }
+            })
         });
 
 
-        //
-        var html = '';
-        html += `
+        function html_(w_arr,arr1,rows_arr){
+            //
+            var html = '';
+            html += `
                 <table id="human" class="table table-bordered text-center"  width="1000px;" height="350px;">
                        <tr>
                            <td colspan="1">月份</td>
                 `;
 
+            for(var key in arr1) {  //3
+                html += `<td colspan="${arr1[key]*2}" id="">${key}</td>`;
+            }
 
-
-        for(var key in arr1) {  //3
-            html += `<td colspan="${arr1[key]*2}" id="">${key}</td>`;
-        }
-
-        html += `
+            html += `
         </tr>
         <tr>
             <td>周(工作日)</td>
             `;
-        for(var i=0;i<w_arr.length;i++){
-            html+=`
+            for(var i=0;i<w_arr.length;i++){
+                html+=`
             <td colspan="2">${w_arr[i]}</td>
         `;
-        }
-
-        html+=`</tr>`;
-
-        //@1
-        for(var i=0;i<6;i++){
-            html+=`<tr>`;
-            for(var j=0;j<=26;j++) {
-                if(j==0){
-                    html += `<td>CTS/人力</td>`;
-                }else{
-                    if(j%2!=0) {
-                        html += `<td   id='${j}'>1</td>`;
-                    }else{
-                        html += `<td style="color:#ccc">1</td>`;
-                    }
-                }
             }
 
             html+=`</tr>`;
+
+            //@1
+            for(var key in rows_arr){
+                html+=`<tr>`;
+                html+=`<td>${rows_arr[key].column}</td>`;
+                for(var i=0;i<rows_arr[key].data.length;i++) {
+                    var id = rows_arr[key].data[i].ttid+'-'+rows_arr[key].data[i].year+'-'+rows_arr[key].data[i].week;
+                    html+=`
+                    <td id="${id}">${rows_arr[key].data[i].origin}</td>
+                    <td style="color:#ccc">${rows_arr[key].data[i].remain}</td>
+                `;
+                }
+
+                html+=`</tr>`;
+            }
+
+            html+=`</table>`;
+            $("#table").html(html);
         }
 
-        html+=`</table>`;
-        $("#table").html(html);
+
+
+
 
 
         //人力修改
@@ -159,11 +168,15 @@
                 $.ajax({
                     type:"POST",
                     url:"{{route('admin.hr.update')}}",
-                    data:{_token:_token,id:inputTest},
+                    data:{_token:_token,value:inputTest,id:id},
                     dataType:'json',
                     success:function(data){
                         if(data.status==0){
                             layer.msg('修改成功',{icon:1});
+                            location.reload();
+                        }else{
+                            layer.msg('修改失败',{icon:2});
+                            location.reload();
                         }
                     },
                 });

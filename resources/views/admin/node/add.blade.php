@@ -75,8 +75,8 @@
     <script type="text/javascript" src="{{asset('static')}}/jquery-validate/dist/localization/messages_zh.js"></script>
     <script src="{{asset('static')}}/layer/layer.js"></script>
     <script type="text/javascript" src="{{asset('static')}}/vue/vue.js"></script>
-
     <script>
+
         new Vue({
             el:'#app',
             data:{

@@ -53,15 +53,16 @@
              //表单序列化
              let data = $(form).serialize();
 
-             $.post(url,data).then(({status,msg})=>{
+             $.post(url,data).then( ({status,msg}) => {
                  if(status ==0){
                      layer.msg(msg,{icon:1,time:2000},()=>{
                         location.href = "{{route('admin.role.index')}}";
                      });
                  }else{
-                     layer.msg(msg,{icon:2,time:2000});
+                     layer.msg(msg,{icon:2,time:1000});
                  }
              });
+
          }
      })
     </script>

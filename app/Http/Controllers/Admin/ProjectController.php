@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class ProjectController extends Controller
 {
-    public $engteam = ['In House','JDM','ODM','Design House','Commercial'];
-    public $format = ['Tablet','Smart Home','AR/VR'];
+    public $engteam = ['1'=>'In House','2'=>'JDM','3'=>'ODM','4'=>'Design House','5'=>'Commercial'];
+    public $format = ['1'=>'Tablet','2'=>'Smart Home','3'=>'AR/VR'];
     /**
      * 项目列表页面显示
      * @return \Illuminate\Http\Response
@@ -21,6 +21,7 @@ class ProjectController extends Controller
         $data = DB::table('projects')
                 ->select("projects.*",'vpms.name as vpmname')
                 ->leftJoin('vpms','projects.vpm','vpms.id')
+                ->where("projects.deleted_at",'=', null)
                 ->get();
         foreach($data as $key=>$list){
             $data[$key]->engteam= $this->engteam[$list->engteam];
@@ -70,13 +71,19 @@ class ProjectController extends Controller
     }
 
     /**
-     * 项目详情展示页面
-     * @param  int  $id
+     * 项目详情展示页面   展示提单
+     * @param  int  $id 项目id
      * @return \Illuminate\Http\Response
      */
     public function show(Request $request,int $id)
     {
-
+        $bills = DB::table("bill")
+            ->select("bill.*","projects.name","pro.name as proname")
+            ->leftJoin('projects','bill.project_id','=','projects.id')
+            ->leftJoin('protesttypes as pro', 'bill.ttype','=', 'pro.id')
+            ->where('project_id','=', $id)
+            ->get()->toArray();
+        return view("admin.project.show",compact("bills"));
     }
 
     /**
@@ -138,9 +145,10 @@ class ProjectController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(int $id)
     {
-        //
+        Project::find($id)->delete();
+        return ['status'=>0,'msg'=>'删除成功!'];
     }
 
 

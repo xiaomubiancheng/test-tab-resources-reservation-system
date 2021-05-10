@@ -13,7 +13,7 @@
     <![endif]-->
     <script>if(window.top !== window.self){ window.top.location = window.location;}</script>
 </head>
-<body class="gray-bg">
+<body class="gray-bg" >
 <div class="middle-box text-center loginscreen  animated fadeInDown">
     <div>
         <div>

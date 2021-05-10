@@ -20,12 +20,12 @@
                         <div class="example-wrap">
                             <div class="example">
                                 <div class="btn-group hidden-xs" id="exampleToolbar" role="group">
-                                    <a href="{{route('admin.bill.settle')}}" >
-                                        <button type="button" class="btn btn-outline btn-default">
-                                            <i class="glyphicon glyphicon-arrow-up" aria-hidden="true"></i>
-                                            提交
-                                        </button>
-                                    </a>
+{{--                                    <a href="javascript:;" onclick="sub_">--}}
+{{--                                        <button type="button" class="btn btn-outline btn-default" >--}}
+{{--                                            <i class="glyphicon glyphicon-arrow-up" aria-hidden="true"></i>--}}
+{{--                                            提交--}}
+{{--                                        </button>--}}
+{{--                                    </a>--}}
                                     <a href="{{route('admin.bill.create')}}" >
                                         <button type="button" class="btn btn-outline btn-default">
                                             <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>
@@ -33,11 +33,12 @@
                                         </button>
                                     </a>
                                 </div>
-                                <table id="exampleTableToolbar" data-toggle="table" data-height="500"  data-search="true" data-pagination="true" >
+                                <table id="unsub_table" data-toggle="table" data-height="500"  data-search="true" data-pagination="true" >
                                     <thead>
                                     <tr>
+{{--                                        <th><input type="checkbox" name="ids[]" ></th>--}}
                                         <th>项目名称</th>
-                                        <th>提单编号</th>
+                                        <th>提单ID</th>
                                         <th>测试类型</th>
                                         <th>提单总人力(人/天)</th>
                                         <th>测试周期</th>
@@ -45,17 +46,23 @@
                                     </tr>
                                     </thead>
                                     <tbody>
+                                    @foreach($bills as $bill)
                                     <tr>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
+{{--                                        <td><input type="checkbox"></td>--}}
+                                        <td>{{$bill->name}}</td>
+                                        <td>{{$bill->id}}</td>
+                                        <td>{{$bill->proname}}</td>
+                                        <td>{{$bill->manpower}}</td>
+                                        <td>{{$bill->startTime}}至{{$bill->endTime}}</td>
                                         <td>
-                                            <a href="" class="label label-success edit">编辑</a>
-                                            <a href="" class="label label-danger">删除</a>
+{{--                                            <a href="" class="label label-success edit">编辑</a>--}}
+                                            <a href="{{route("admin.bill.del",['id'=>$bill->id])}}" class="label label-danger del">删除</a>
+
+                                            <a href="{{route("admin.bill.changeStatus",['id'=>$bill->id])}}" class="label label-primary">提交</a>
+
                                         </td>
                                     </tr>
+                                    @endforeach
                                     </tbody>
                                 </table>
                             </div>
@@ -65,8 +72,43 @@
                 </div>
                 <div id="tab-2" class="tab-pane">
                     <div class="panel-body">
-                        <strong>移动设备优先</strong>
-                        <p>在 Bootstrap 2 中，我们对框架中的某些关键部分增加了对移动设备友好的样式。而在 Bootstrap 3 中，我们重写了整个框架，使其一开始就是对移动设备友好的。这次不是简单的增加一些可选的针对移动设备的样式，而是直接融合进了框架的内核中。也就是说，Bootstrap 是移动设备优先的。针对移动设备的样式融合进了框架的每个角落，而不是增加一个额外的文件。</p>
+
+                        <div class="example-wrap">
+                            <div class="example">
+                                <div class="btn-group hidden-xs" id="exampleToolbar" role="group">
+                                    <a href="{{route('admin.bill.create')}}" >
+                                        <button type="button" class="btn btn-outline btn-default">
+                                            <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>
+                                            新建提单
+                                        </button>
+                                    </a>
+                                </div>
+                                <table data-toggle="table" data-height="500"  data-search="true" data-pagination="true" >
+                                    <thead>
+                                    <tr>
+                                        <th>项目名称</th>
+                                        <th>提单ID</th>
+                                        <th>测试类型</th>
+                                        <th>提单总人力(人/天)</th>
+                                        <th>测试周期</th>
+{{--                                        <th width="10%">操作</th>--}}
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach($billsO as $bill)
+                                        <tr>
+                                            <td>{{$bill->name}}</td>
+                                            <td>{{$bill->id}}</td>
+                                            <td>{{$bill->proname}}</td>
+                                            <td>{{$bill->manpower}}</td>
+                                            <td>{{$bill->startTime}}至{{$bill->endTime}}</td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -80,24 +122,12 @@
 @section('js')
     <script src="{{asset('static')}}/layer/layer.js"></script>
     <script>
-        $("#exampleTableToolbar").bootstrapTable({
-            search: true,
-            showColumns: true,
-            striped: true,
-            iconSize: 'outline',
-            toolbar: '#systemToolbar',
-            showExport: true,                //是否显示导出
-            exportDataType: 'all',            //导出方式
-            exportTypes:[ 'xlsx', 'excel'],  //导出文件类型
-            exportOptions: {                 //导出文件名称
-                fileName:"项目列表"
-            },
-        });
 
         const _token = "{{csrf_token()}}";
 
-        //删除
-        $('.del').click(function (evt) {
+
+        //提单-已保存-删除
+        $("#unsub_table").on('click','.del',function(){
             let url = $(this).attr('href');
             var that = $(this);
             layer.confirm('你确定要删除嘛', {
@@ -116,14 +146,62 @@
                     }
                 });
             }, function(){
-                return;s
+                return;
             });
-
-
-
-
             return false;
         })
+
+
+        function sub_() {
+            if(check()==0){
+                layer.msg('至少选中一条信息',{icon:2});
+                return false;
+            }
+        }
+
+        function check(){
+            var count =0;
+            //判断是否有信息被选中
+            $("input[name='btSelectItem']").each(function(){
+                if($(this).is(":checked")){
+                    count++;
+                }
+            })
+            return count;
+        }
+
+        function doBatch(result){
+            var VocationApprove = "{=:url('Work/VocationApprove')=}";
+            $.ajax({
+                type: "POST",
+                url:VocationApprove,
+                async: false,
+                cache: false,
+                dataType: "json",
+                data: {runid_arr:getSelectRows(),result:result},
+                success: function (data) {
+                    if(data.code == 200){
+                        alert("成功!");
+                        location.reload();
+                    }
+                },
+            });
+        }
+
+        //获取被选中行的runid
+        function getSelectRows(){
+            var runid_arr=[];
+            //获取所有信息的
+            var getSelectRows =$("#leave_application_list").bootstrapTable('getSelections',function(row){
+                return row;
+            })
+            //流实例id
+            for(var i=0,len=getSelectRows.length;i<len;i++){
+                // runid_arr.push(getSelectRows[i].runid);
+                runid_arr.push(getSelectRows[i]);
+            }
+            return runid_arr;
+        }
     </script>
 @endsection
 

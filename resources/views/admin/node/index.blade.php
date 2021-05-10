@@ -16,7 +16,7 @@
                                     </button>
                                 </a>
                             </div>
-                            <table id="exampleTableToolbar" data-toggle="table" data-height="500"  data-search="true" data-pagination="true" >
+                            <table id="node" data-toggle="table" data-height="500"  data-search="true" data-pagination="true" >
                                 <thead>
                                 <tr>
                                     <th>ID</th>
@@ -78,8 +78,7 @@
 
         const _token = "{{csrf_token()}}";
 
-        //删除
-        $('.del').click(function (evt) {
+        $("#node").on('click','.del',function(){
             let url = $(this).attr('href');
             var that = $(this);
             layer.confirm('你确定要删除嘛', {
@@ -100,12 +99,8 @@
             }, function(){
                 return;s
             });
-
-
-
-
             return false;
-        })
+        });
     </script>
 @endsection
 

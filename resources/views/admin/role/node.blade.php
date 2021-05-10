@@ -52,7 +52,7 @@
                     <form action="{{route('admin.role.node',$role)}}"  class="form-horizontal" role="form"  id="form-role-node-add" method="post">
                         @csrf
                         <div class="form-group">
-                            <label for="name" class="col-sm-2 control-label"><span class="text-danger">*</span>角色名称:</label>
+                            <label for="name" class="col-sm-2 control-label">角色名称:</label>
                             <div class="col-sm-10">
                                 <input type="text" class="form-control" id="name" name="name" value="{{$role->name}}" readonly>
                             </div>

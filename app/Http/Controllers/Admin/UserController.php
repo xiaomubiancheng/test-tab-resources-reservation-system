@@ -6,17 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Http\Models\Role;
 use App\Http\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
 
 class UserController extends BaseController
 {
     //用户列表
     public function index(){
-        $data = User::get();
+        $data = User::orderBy('id', 'desc')->get();
         $model = new User();
         return view('admin.user.index',compact('data','model'));
     }
 
-    //添加用户
+    //显示添加用户页
     public function create(){
         return view('admin.user.add');
     }
@@ -32,7 +34,11 @@ class UserController extends BaseController
         ]);
         $password = $post['password']??'123456';
         $post['password'] = bcrypt($password);
+        $post['created_at'] = date("y-m-d",time());
+
+//        DB::table("users")->insert($post);
         User::create($post);
+
         return redirect(route('admin.user.index'))->with('success','添加用户成功');
     }
 

@@ -16,12 +16,12 @@
                                     </button>
                                 </a>
                             </div>
-                            <table id="exampleTableToolbar" data-toggle="table" data-height="500"  data-search="true" data-pagination="true" >
+                            <table id="role" data-toggle="table" data-height="500"  data-search="true" data-pagination="true" >
                                 <thead>
                                 <tr>
                                     <th>ID</th>
                                     <th>角色名称</th>
-                                    <th>查看权限</th>
+                                    <th><span style="color:red">查看权限</span></th>
                                     <th>添加时间</th>
                                     <th>操作</th>
                                 </tr>
@@ -56,7 +56,7 @@
 @section('js')
     <script src="{{asset('static')}}/layer/layer.js"></script>
     <script>
-        $("#exampleTableToolbar").bootstrapTable({
+        $("#role").bootstrapTable({
             search: true,
             showColumns: true,
             striped: true,
@@ -72,8 +72,7 @@
 
         const _token = "{{csrf_token()}}";
 
-        //删除
-        $('.del').click(function (evt) {
+        $("#role").on('click','.del',function(){
             let url = $(this).attr('href');
             var that = $(this);
             layer.confirm('你确定要删除嘛', {
@@ -94,10 +93,10 @@
             }, function(){
                 return;
             });
-
-
             return false;
         })
+
+
     </script>
 @endsection
 

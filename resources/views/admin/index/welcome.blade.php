@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!--360浏览器优先以webkit内核解析-->
-    <title>H+ 后台主题UI框架 - 主页示例</title>
+    <title>人力资源预览</title>
     <link rel="shortcut icon" href="favicon.ico"> <link href="{{asset('static')}}/admin/css/bootstrap.min14ed.css?v=3.3.6" rel="stylesheet">
     <link href="{{asset('static')}}/admin/css/font-awesome.min93e3.css?v=4.4.0" rel="stylesheet">
     <link href="{{asset('static')}}/admin/css/animate.min.css" rel="stylesheet">
@@ -13,7 +13,7 @@
 </head>
 <body class="gray-bg">
 <div class="wrapper wrapper-content">
-
+<h1>todo。。。。</h1>
 </div>
 <script src="{{asset('static')}}/admin/js/jquery.min.js?v=2.1.4"></script>
 <script src="{{asset('static')}}/admin/js/bootstrap.min.js?v=3.3.6"></script>

@@ -21,22 +21,24 @@
                                 <thead>
                                 <tr>
                                     <th>项目名称</th>
-                                    <th>PCR编号</th>
+                                    <th>PCR编号(项目_项目ID_PCR ID)</th>
                                     <th>PCR需求</th>
                                     <th>费用</th>
                                     <th>操作</th>
                                 </tr>
                                 </thead>
                                 <tbody>
+                                @foreach($pcrs as $pcr)
                                 <tr>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
+                                    <td>{{$pcr->project_name}}</td>
+                                    <td>{{$pcr->project_name}}_{{$pcr->project_id}}_{{$pcr->id}}</td>
+                                    <td>{{$pcr->content}}</td>
+                                    <td>{{$pcr->cost}}</td>
                                     <td>
-                                        <a href="" class="label label-success">查看详情</a>
+                                        <a href="javascript:;" class="label label-success" onclick="show('{{$pcr->img}}')">查看证据</a>
                                     </td>
                                 </tr>
+                                @endforeach
                                 </tbody>
                             </table>
                         </div>
@@ -88,12 +90,25 @@
             }, function(){
                 return;s
             });
-
-
-
-
             return false;
         })
+
+
+        //查看图片
+        function show(path) {
+            photo = {
+                "title" : "pcr",
+                "data":[
+                    {
+                        "src": path,
+                    }
+                ]
+            }
+            layer.photos({
+                photos: photo //格式见API文档手册页
+                ,anim: 5 //0-6的选择，指定弹出图片动画类型，默认随机
+            });
+        }
     </script>
 @endsection
 

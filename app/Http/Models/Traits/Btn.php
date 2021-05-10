@@ -25,9 +25,9 @@ trait Btn{
 
     public function assignRoleBtn(string $route){
 
-        if(auth::guard('user')->user()->username !=config('rbac.super') && !in_array($route,$this->auth)){
+        if( auth::guard('user')->user()->username !=config('rbac.super') && !in_array($route,$this->auth)){
             return '';
         }
-        return '<a href="'.route($route,$this).'" class="label label-secondary radius">修改</a>';
+        return '<a href="'.route($route,$this).'" class="label label-secondary radius">分配角色</a>';
     }
 }

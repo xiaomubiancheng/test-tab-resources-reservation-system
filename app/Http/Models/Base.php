@@ -4,8 +4,9 @@ namespace App\Http\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as AuthUser;
 
-class Base extends Model
+class Base extends AuthUser
 {
     //软删除
     use SoftDeletes;
@@ -13,8 +14,9 @@ class Base extends Model
     //拒绝添加的字段
     protected $guarded = [];
 
-//    public function treeLevel(array $data,int $pid = 0, string $html='--',int $level = 0){
-    public function treeLevel(array $data,$pid = 0, $html='--',$level = 0){
+
+    //加上层级
+    public function treeLevel(array $data, $pid = 0, $html='--',$level = 0){
         Static $arr = [];
         foreach($data as $k=>$val){
             if($pid == $val['pid']){
@@ -37,7 +39,7 @@ class Base extends Model
         return $arr;
     }
 
-    //获取层级数组
+    //获取层级数组  以id为键值
     public function getTreeArr(array $data,$pid =0){
         $arr = [];
         foreach($data as $k=>$v){

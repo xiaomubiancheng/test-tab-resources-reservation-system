@@ -9,11 +9,7 @@ use App\Http\Models\Role;
 
 class RoleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+    //角色列表
     public function index()
     {
         $data = Role::withTrashed()->get();
@@ -81,7 +77,8 @@ class RoleController extends Controller
     {
         try{
             $this->validate($request,[
-                'name' => 'required|unique:roles,name'.$id.',id'
+                'name' => 'required|unique:roles,name,'.$id.',id'
+//                'name' => 'required|unique:roles,name,'.$id.',id'   不修改可以通过,保留原来的值
             ]);
         }catch(\Exception $e){
             return ['status'=>1000,'msg'=>'验证不通过'];
@@ -113,10 +110,11 @@ class RoleController extends Controller
         $node = new Node;
         //读取所有权限
         $nodeAll = $node->getAllList();
-        //当前角色所有权限
+        //当前角色所有权限 id
         $ownNodes =  $role->nodes()->pluck('id')->toArray();
 
         $pris = $node->getTreeArr($nodeAll);
+        //pid层级数
         $children = $node->getTreeID($nodeAll);
 
         return view('admin.role.node',compact('role','children','pris','ownNodes'));
