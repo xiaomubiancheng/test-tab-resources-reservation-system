@@ -1,4 +1,3 @@
-
 @extends('admin.layout.ucommon')
 
 @section('css')
@@ -13,6 +12,7 @@
 @endsection
 
 @section('content')
+
     <div class="ibox-content">
         <div class="row row-lg" style="padding-left: 15px;margin-bottom:20px;" style="float: left">
             <div class="input-daterange input-group" id="datepicker" style="float: left">
@@ -24,6 +24,10 @@
         </div>
         <!---->
         <div class="row row-lg">
+            <div>
+{{--                <span style="color:red">*填写前请确认,一旦填写无法修改</span>--}}
+                <span style="color:red"></span>
+            </div>
             <div class="col-sm-12">
                 <!-- Example Toolbar -->
                 <div class="example-wrap">
@@ -154,6 +158,8 @@
                 return ;
             }
 
+
+
             var input = $("<input type='text'/>");
             // console.log(td.context.clientWidth);
             input.width(td.context.clientWidth);
@@ -167,6 +173,7 @@
 
             input.blur(function(){
                 var inputTest = $(this).val();
+
                 if(inputTest == text){
                     td.html(text);
                     return;

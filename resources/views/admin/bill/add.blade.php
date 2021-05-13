@@ -8,7 +8,7 @@
 @section('content')
     <div class="wrapper wrapper-content animated fadeIn">
         <div class="ibox-title">
-            <h5><a href="{{route('admin.bill.index')}}">提单列表</a>>提单添加:</h5>
+            <h5><a href="{{route('admin.bill.index')}}"><span style="font-size:16px;">提单列表</span></a>>提单添加:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:red">置灰部分不可操作,点击右上角 刷新页面重新操作</span></h5>
         </div>
         <div class="ibox-content">
             <div class="row row-lg">
@@ -219,6 +219,8 @@
                $("#endtime_div").hide(); //结束时间
                $("#auto_div").show();
                $("#custom_div").hide();
+               $("#content_div").hide();
+               $("#submit_status").val(1);
            }
             $("#sku").attr('disabled','disabled');
         });
@@ -287,15 +289,14 @@
 
             //先去判断人力是否充足
             $.post("{{route('admin.bill.humanIsEnough')}}",{_token:_token,time:time,ttid:ttid,workday:workday,manpower:manpower} ).then(({status,msg,data})=>{
+                //data
 
                 //人力不足
-                if(status==1000){
-                    // layer.msg("人力不足",{icon:2});
+                if( status==1000 ){
                     layer.confirm(msg,{
                         btn:['顺延时间','加班安排']
                     },()=>{
-                        // layer.msg("顺延时间");
-
+                        /*1****顺延时间*****/
                         //找下一个时间段
                       $.post("{{route('admin.bill.timedelay')}}",{_token:_token,time:time,ttid:ttid,workday:workday,manpower:manpower,week_count:data[0],manpower_:data[1]}).then(({data,msg,status})=>{
                          if(status==0){
@@ -314,7 +315,7 @@
                         });
 
                     },()=>{
-                        // layer.msg("加班安排");
+                        /******2加班安排*****/
 
                         $.post("{{route('admin.bill.overtime')}}",{_token:_token,time:time,ttid:ttid,workday:workday,manpower:manpower}).then(({status,msg,data})=>{
                             if(status==0){
@@ -341,10 +342,8 @@
                     });
 
                 }else if(status == 1001){
-
                     layer.msg(msg,{icon:2});
                     $("#starttime").val("");
-
                 }else{  //正常提交
 
                     $("#auto_starttime").val(time);
@@ -392,6 +391,7 @@
         //***********提交************
         $("#submit").on('click',function(){
 
+            //自定义
             if($("#submit_status").val() == 4){
                 let startTime = $("#starttime").val();
                 let endTime = $("#endtime").val();
@@ -423,7 +423,7 @@
                 });
             }
 
-            console.log(submit_flag);
+
 
             if(!submit_flag){
                 return false;
@@ -434,6 +434,8 @@
                 return false;
             }
 
+            //数据提交
+
             $.ajax({
                 url:"{{route('admin.bill.store')}}",
                 type:"POST",
@@ -442,6 +444,7 @@
                 async:false,
                 success:function(data){
                     if(data.status == 0){
+                        layer.msg(data.msg,{icon:1,time:1000});
                         location.reload();
                     }else{
                         layer.msg('msg',{icon:2});

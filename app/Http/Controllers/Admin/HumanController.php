@@ -231,7 +231,8 @@ class HumanController extends Controller
         foreach($initDatas as $initData){
           foreach($initData as $list){
               if($list->ttid == 1){
-                  $w_arr[] = $list->week;
+//                  $w_arr[] = $list->week; //
+                  $w_arr[] = "W".$list->week_count; //全年第几周
                   $mw_arr[$list->month][] = $list->week;
               }
 
@@ -344,10 +345,14 @@ class HumanController extends Controller
     }
 
 
-
-    //人力修改
+    /**
+     * 人力修改
+     * @param  Request  $request
+     * @return array
+     */
     public function update(Request $request){
         $inputData = $request->only(['id','value']);
+
         $id = $inputData['id'];
         $value = $inputData['value'];
         $data = explode('-',$id);
@@ -356,16 +361,18 @@ class HumanController extends Controller
         $week = $data[2].'-'.$data[3];
 
 
+
         //修改origin
         //初始值origin和remain一样()
         //目前是填完不让修改
         //修改remian = $origin - 已经消耗的人力  todo
+        //*** 修改人力先去查询是否有提单
         $re = DB::table("humtableinit2")->where([
             ['ttid' ,'=', $ttid],
             ['year', '=', $year],
             ['week', '=', $week],
             ['origin_edit','=', 1]
-        ])->update(['origin'=>$value,'remain'=>$value,'origin_edit'=>2]);
+        ])->update(['origin'=>$value,'remain'=>$value,'origin_edit'=>2]);  //2-不可修改1-可修改(初始值)
 
 
         if(!$re){

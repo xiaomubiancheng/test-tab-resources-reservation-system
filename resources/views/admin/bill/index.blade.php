@@ -8,69 +8,69 @@
     <div class="col-sm-12">
         <div class="tabs-container">
             <ul class="nav nav-tabs">
-                <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">已保存</a>
-                </li>
-                <li class=""><a data-toggle="tab" href="#tab-2" aria-expanded="false">已提交</a>
+{{--                <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">已保存</a>--}}
+{{--                </li>--}}
+                <li class="active"><a data-toggle="tab" href="#tab-2" aria-expanded="false">已提交</a>
                 </li>
             </ul>
             <div class="tab-content">
-                <div id="tab-1" class="tab-pane active">
-                    <div class="panel-body">
+{{--                <div id="tab-1" class="tab-pane active">--}}
+{{--                    <div class="panel-body">--}}
 
-                        <div class="example-wrap">
-                            <div class="example">
-                                <div class="btn-group hidden-xs" id="exampleToolbar" role="group">
+{{--                        <div class="example-wrap">--}}
+{{--                            <div class="example">--}}
+{{--                                <div class="btn-group hidden-xs" id="exampleToolbar" role="group">--}}
 {{--                                    <a href="javascript:;" onclick="sub_">--}}
 {{--                                        <button type="button" class="btn btn-outline btn-default" >--}}
 {{--                                            <i class="glyphicon glyphicon-arrow-up" aria-hidden="true"></i>--}}
 {{--                                            提交--}}
 {{--                                        </button>--}}
 {{--                                    </a>--}}
-                                    <a href="{{route('admin.bill.create')}}" >
-                                        <button type="button" class="btn btn-outline btn-default">
-                                            <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>
-                                            新建提单
-                                        </button>
-                                    </a>
-                                </div>
-                                <table id="unsub_table" data-toggle="table" data-height="500"  data-search="true" data-pagination="true" >
-                                    <thead>
-                                    <tr>
+{{--                                    <a href="{{route('admin.bill.create')}}" >--}}
+{{--                                        <button type="button" class="btn btn-outline btn-default">--}}
+{{--                                            <i class="glyphicon glyphicon-plus" aria-hidden="true"></i>--}}
+{{--                                            新建提单--}}
+{{--                                        </button>--}}
+{{--                                    </a>--}}
+{{--                                </div>--}}
+{{--                                <table id="unsub_table" data-toggle="table" data-height="500"  data-search="true" data-pagination="true" >--}}
+{{--                                    <thead>--}}
+{{--                                    <tr>--}}
 {{--                                        <th><input type="checkbox" name="ids[]" ></th>--}}
-                                        <th>项目名称</th>
-                                        <th>提单ID</th>
-                                        <th>测试类型</th>
-                                        <th>提单总人力(人/天)</th>
-                                        <th>测试周期</th>
-                                        <th width="10%">操作</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    @foreach($bills as $bill)
-                                    <tr>
+{{--                                        <th>项目名称</th>--}}
+{{--                                        <th>提单ID</th>--}}
+{{--                                        <th>测试类型</th>--}}
+{{--                                        <th>提单总人力(人/天)</th>--}}
+{{--                                        <th>测试周期</th>--}}
+{{--                                        <th width="10%">操作</th>--}}
+{{--                                    </tr>--}}
+{{--                                    </thead>--}}
+{{--                                    <tbody>--}}
+{{--                                    @foreach($bills as $bill)--}}
+{{--                                    <tr>--}}
 {{--                                        <td><input type="checkbox"></td>--}}
-                                        <td>{{$bill->name}}</td>
-                                        <td>{{$bill->id}}</td>
-                                        <td>{{$bill->proname}}</td>
-                                        <td>{{$bill->manpower}}</td>
-                                        <td>{{$bill->startTime}}至{{$bill->endTime}}</td>
-                                        <td>
+{{--                                        <td>{{$bill->name}}</td>--}}
+{{--                                        <td>{{$bill->id}}</td>--}}
+{{--                                        <td>{{$bill->proname}}</td>--}}
+{{--                                        <td>{{$bill->manpower}}</td>--}}
+{{--                                        <td>{{$bill->startTime}}至{{$bill->endTime}}</td>--}}
+{{--                                        <td>--}}
 {{--                                            <a href="" class="label label-success edit">编辑</a>--}}
-                                            <a href="{{route("admin.bill.del",['id'=>$bill->id])}}" class="label label-danger del">删除</a>
+{{--                                            <a href="{{route("admin.bill.del",['id'=>$bill->id])}}" class="label label-danger del">删除</a>--}}
 
-                                            <a href="{{route("admin.bill.changeStatus",['id'=>$bill->id])}}" class="label label-primary">提交</a>
+{{--                                            <a href="{{route("admin.bill.changeStatus",['id'=>$bill->id])}}" class="label label-primary">提交</a>--}}
 
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+{{--                                        </td>--}}
+{{--                                    </tr>--}}
+{{--                                    @endforeach--}}
+{{--                                    </tbody>--}}
+{{--                                </table>--}}
+{{--                            </div>--}}
+{{--                        </div>--}}
 
-                    </div>
-                </div>
-                <div id="tab-2" class="tab-pane">
+{{--                    </div>--}}
+{{--                </div>--}}
+                <div id="tab-2" class="tab-pane active">
                     <div class="panel-body">
 
                         <div class="example-wrap">
@@ -87,7 +87,7 @@
                                     <thead>
                                     <tr>
                                         <th>项目名称</th>
-                                        <th>提单ID</th>
+{{--                                        <th>提单ID</th>--}}
                                         <th>测试类型</th>
                                         <th>提单总人力(人/天)</th>
                                         <th>测试周期</th>
@@ -98,7 +98,7 @@
                                     @foreach($billsO as $bill)
                                         <tr>
                                             <td>{{$bill->name}}</td>
-                                            <td>{{$bill->id}}</td>
+{{--                                            <td>{{$bill->id}}</td>--}}
                                             <td>{{$bill->proname}}</td>
                                             <td>{{$bill->manpower}}</td>
                                             <td>{{$bill->startTime}}至{{$bill->endTime}}</td>
