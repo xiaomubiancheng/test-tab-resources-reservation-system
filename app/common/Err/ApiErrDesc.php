@@ -12,4 +12,6 @@ class ApiErrDesc{
     const ERR_PARAMS1 = [1001,'所选时间后几周的工作日周期人力未填,无法操作,请联系管理员'];
 
     const ERR_MANPOWER = [1000,'人力不足'];
+    const ERR_HUMANEDIT = [1002,'参数错误'];
+    const ERR_BILLADD = [1000,'提单提交失败'];
 }

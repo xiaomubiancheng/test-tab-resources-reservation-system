@@ -40,6 +40,7 @@
 
         $("#staType").on('change',function(){
             var staType = $(this).val();
+            console.log(staType);
             init(staType);
         });
 

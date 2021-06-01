@@ -185,9 +185,15 @@
                     data:{_token:_token,value:inputTest,id:id},
                     dataType:'json',
                     success:function(data){
+
                         if(data.status==0){
-                            layer.msg('修改成功',{icon:1});
-                            location.reload();
+                            if( data.data.length ){
+                                layer.msg('修改成功,但是修改结果影响到了一些提单',{icon:1});
+                                location.reload();
+                            }else{
+                                layer.msg('修改成功',{icon:1});
+                                location.reload();
+                            }
                         }else{
                             layer.msg('修改失败',{icon:2});
                             location.reload();

@@ -1,14 +1,20 @@
 <?php
-
 namespace App\Http\Controllers\Admin;
 
+use App\Common\Hum\HumPrice;
 use App\Http\Controllers\Controller;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Common\Err\ApiErrDesc;
+use App\Http\Response\ResponseJson;
+use Mail;
+use Illuminate\Mail\Message;
 
 class HumanController extends Controller
 {
+    use ResponseJson;
     //人力资源管理
     public function index(){
 //        return view('admin.human.index');
@@ -69,22 +75,26 @@ class HumanController extends Controller
             ->where("deleted_at",'=',null)
             ->get()->toArray();
 
-        $bills = DB::table('bill')->where([
-            ['is_use','=', 2]
-        ])->get()->toArray();
+        //已提交提单
+        $bills = DB::table('bill')
+//            ->where([
+//                ['is_use','=', 2]
+//            ])
+            ->get()->toArray();
 
         //已使用
         $bill_new = array();
         foreach($bills as $k=>$v){
-            $bill_new[$v->id] = $v->manpower * 200;
+            $bill_new[$v->project_id] = round(( ($v->manpower) * (23*1000/12/21.75*7) ),2);
         }
+
 
         $data = array();
         foreach($projects as $val){
-            $data[$val->id]['unused'] = 0;
             $data[$val->id]['used'] = 0;
             $data[$val->id]['over'] = 0;
             $pro_sum = $val->dev_budget + $val->os_budget + $val->ota_budget; //预算
+            $data[$val->id]['unused'] = $pro_sum;
             foreach($bill_new as $bk=>$bv){
                 if($val->id == $bk){
                     if($pro_sum >= $bv){
@@ -99,6 +109,9 @@ class HumanController extends Controller
             }
         }
 
+
+
+
         $data1 = [];//已使用
         $data2 = []; //未使用
         $data3 = []; //超出
@@ -108,8 +121,11 @@ class HumanController extends Controller
         $data2 = array_column($data,'unused');
         $data1 = array_column($data,'used');
         $data3 = array_column($data,'over');
+
         return ['status'=>0, 'data'=>compact('pros','data1','data2', 'data3')];
     }
+
+
 
     //index 页 数据库数据生成
     public function tableInit1(){
@@ -360,25 +376,58 @@ class HumanController extends Controller
         $year = $data[1];
         $week = $data[2].'-'.$data[3];
 
+        if($value <0){
+            return $this->jsonData(ApiErrDesc::ERR_HUMANEDIT[0],ApiErrDesc::ERR_HUMANEDIT[1]);
+        }
 
-
-        //修改origin
-        //初始值origin和remain一样()
-        //目前是填完不让修改
-        //修改remian = $origin - 已经消耗的人力  todo
-        //*** 修改人力先去查询是否有提单
         $re = DB::table("humtableinit2")->where([
             ['ttid' ,'=', $ttid],
             ['year', '=', $year],
             ['week', '=', $week],
-            ['origin_edit','=', 1]
-        ])->update(['origin'=>$value,'remain'=>$value,'origin_edit'=>2]);  //2-不可修改1-可修改(初始值)
+        ])->get();
 
 
-        if(!$re){
-            return ['status'=>1000,'msg'=>'error'];
+        $origin = (int)($re[0]->origin);
+        $remain = (int)($re[0]->remain);
+        $change = $value-$origin;
+        $change??0;
+
+
+
+        $new_remain = (int)$remain + (int)$change;
+
+        $editRe = DB::table("humtableinit2")->where([
+            ['ttid' ,'=', $ttid],
+            ['year', '=', $year],
+            ['week', '=', $week],
+        ])->update(['origin'=>$value,'remain'=>$value]);
+
+        //组合影响提单的查询条件
+        $month = $re[0]->month;
+
+        $startTime = $year.'-'.$month.'-'.$data[2];
+        $endTime = $year.'-'.$month.'-'.$data[3];
+
+        //受影响的提单
+        $effect_bills = DB::select("select * from  xhx_bill where ttype=? AND startTime BETWEEN ? AND  ? OR endTime BETWEEN ? And ?",[$ttid,$startTime,$endTime,$startTime,$endTime]);
+
+        if(count($effect_bills)>0){
+            $uid = Auth::guard('user')->user()->id;
+            $user_email = DB::table("users")->where('id','=',$uid)->value("email");
+            //发送邮件
+            Mail::send("mail.humanedit",compact('effect_bills'),function (Message $message) use($user_email){
+                //发给谁
+                $message->to($user_email);
+                //主题
+                $message->subject('修改人力影响的提单');
+            });
         }
-        return ['status'=>0,'msg'=>'successs'];
+
+
+        if(!$editRe){
+            return $this->jsonData(ApiErrDesc::ERR_MANPOWER[0],"error");
+        }
+        return $this->jsonSuccessData($effect_bills);
     }
 
 

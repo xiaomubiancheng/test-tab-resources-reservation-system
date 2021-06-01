@@ -164,6 +164,32 @@
                     </form>
                 </div>
             </div>
+            <!-- 已保存列表-->
+            <div class="example-wrap " style="margin-top:100px;display: none;" id="preserve_div" >
+                <div class="example">
+                    <div class="btn-group hidden-xs" id="exampleToolbar" role="group" style="margin-bottom: -60px;" >
+                        <a href="javascript:;" >
+                            <button type="button" class="btn btn-outline btn-default" >
+                                <i class="glyphicon glyphicon-arrow-up" aria-hidden="true"></i>
+                                提交
+                            </button>
+                        </a>
+                    </div>
+                    <table id="preserve"  >
+
+                    </table>
+                </div>
+            </div>
+
+
+            <!--项目费用-->
+            <div class="ibox-content" style="margin-top: 20px;">
+
+                <div class="row" id="container" style="width:700px;height:400px;">
+
+                </div>
+            </div>
+
         </div>
     </div>
 @endsection
@@ -173,6 +199,7 @@
     <script type="text/javascript" src="{{asset('static')}}/jquery-validate/dist/jquery.validate.min.js"></script>
     <script type="text/javascript" src="{{asset('static')}}/jquery-validate/dist/localization/messages_zh.js"></script>
     <script type="text/javascript" src="{{asset('static')}}/admin/js/plugins/datapicker/bootstrap-datepicker.js"></script>
+    <script type="text/javascript" src="{{asset('static')}}/echart5/echarts.min.js"></script>
     <script>
         $('.select2').select2();
         $('.datepicker').datepicker({
@@ -180,7 +207,6 @@
             "format":"yyyy-mm-dd",
             Highlight :true, //高亮显示
         });
-        // .datepicker("setDate",'now');
 
         const _token = "{{csrf_token()}}";
         var tcontent = [];   //存放测试内容
@@ -435,7 +461,6 @@
             }
 
             //数据提交
-
             $.ajax({
                 url:"{{route('admin.bill.store')}}",
                 type:"POST",
@@ -444,7 +469,7 @@
                 async:false,
                 success:function(data){
                     if(data.status == 0){
-                        layer.msg(data.msg,{icon:1,time:1000});
+                        layer.msg(data.msg,{icon:1,time:2000});
                         location.reload();
                     }else{
                         layer.msg('msg',{icon:2});
@@ -475,4 +500,304 @@
            return flag;
         }
     </script>
+
+    <script>
+
+        var assist_create_status;
+        var assist_project_id;
+        $.ajax({
+            type: "GET",
+            url: "{{route('admin.bill.getStatus')}}",
+            data:  "",
+            async:false,
+            dataType: "json",
+            success: function(data){
+
+                assist_create_status = data.data.status;
+                assist_project_id = data.data.project_id;
+            },
+        });
+
+        //
+        if(assist_create_status == 2 && assist_project_id!=0){
+            let project_id = assist_project_id;
+
+            $.post("{{route('admin.bill.preserve')}}",{_token:"{{csrf_token()}}",project_id:project_id},function (data) {
+
+                //有提单
+                if(data.data.length){
+                    project_id = data.data[0].project_id;
+
+                    //项目选择 ---- 锁死
+                    $("#project").val(project_id).attr('disabled','disabled');
+
+                    $("#preserve_div").show();
+
+                    $("#preserve").bootstrapTable({
+                        data: data.data,
+                        method:"post",
+                        showColumns: true,
+                        height:400,
+                        striped: true,
+                        iconSize: 'outline',
+                        icons: {
+                            columns: 'glyphicon-list'
+                        },
+                        columns: [
+                            {field:'',checkbox:true},
+                            {field: 'id',title: '提单ID',class:'td-nowrap',sortable: true},
+                            {field: 'name',title: '项目名称',class:'td-nowrap',sortable: true},
+                            {field: 'proname',title: '测试类型',class:'td-nowrap',sortable: true},
+                            {field: 'manpower',title: '人力',class:'td-nowrap',sortable: true},
+                        ],
+                    });
+
+                    //3. 项目费用图
+
+                    if(project_id>0){
+                        $.get("{{route('admin.bill.costPriview')}}",{_token:"{{csrf_token()}}",project_id:project_id},res =>{
+                            res;
+                        }).then(({status,data})=>{
+                            console.log(data);
+                            var last = data.last;
+                            var uid_use = data.uid_use;
+                            var use = data.use;
+
+                            var dom = document.getElementById("container");
+                            var myChart = echarts.init(dom);
+                            var app = {};
+
+                            var option;
+
+
+
+                            var posList = [
+                                'left', 'right', 'top', 'bottom',
+                                'inside',
+                                'insideTop', 'insideLeft', 'insideRight', 'insideBottom',
+                                'insideTopLeft', 'insideTopRight', 'insideBottomLeft', 'insideBottomRight'
+                            ];
+
+                            app.configParameters = {
+                                rotate: {
+                                    min: -90,
+                                    max: 90
+                                },
+                                align: {
+                                    options: {
+                                        left: 'left',
+                                        center: 'center',
+                                        right: 'right'
+                                    }
+                                },
+                                verticalAlign: {
+                                    options: {
+                                        top: 'top',
+                                        middle: 'middle',
+                                        bottom: 'bottom'
+                                    }
+                                },
+                                position: {
+                                    options: posList.reduce(function (map, pos) {
+                                        map[pos] = pos;
+                                        return map;
+                                    }, {})
+                                },
+                                distance: {
+                                    min: 0,
+                                    max: 100
+                                }
+                            };
+
+                            app.config = {
+                                rotate: 90,
+                                align: 'left',
+                                verticalAlign: 'middle',
+                                position: 'insideBottom',
+                                distance: 15,
+                                onChange: function () {
+                                    var labelOption = {
+                                        normal: {
+                                            rotate: app.config.rotate,
+                                            align: app.config.align,
+                                            verticalAlign: app.config.verticalAlign,
+                                            position: app.config.position,
+                                            distance: app.config.distance
+                                        }
+                                    };
+                                    myChart.setOption({
+                                        series: [{
+                                            label: labelOption
+                                        }, {
+                                            label: labelOption
+                                        }, {
+                                            label: labelOption
+                                        }, {
+                                            label: labelOption
+                                        }]
+                                    });
+                                }
+                            };
+
+
+                            var labelOption = {
+                                show: true,
+                                position: app.config.position,
+                                distance: app.config.distance,
+                                align: app.config.align,
+                                verticalAlign: app.config.verticalAlign,
+                                rotate: app.config.rotate,
+                                formatter: '{c}  {name|{a}}',
+                                fontSize: 16,
+                                rich: {
+                                    name: {
+                                    }
+                                }
+                            };
+
+                            option = {
+                                tooltip: {
+                                    trigger: 'axis',
+                                    axisPointer: {
+                                        type: 'shadow'
+                                    }
+                                },
+                                legend: {
+                                    data: ['已使用', '剩余', '当前单']
+                                },
+                                toolbox: {
+                                    show: true,
+                                    orient: 'vertical',
+                                    left: 'right',
+                                    top: 'center',
+                                    feature: {
+                                        mark: {show: true},
+                                        dataView: {show: true, readOnly: false},
+                                        magicType: {show: true, type: ['line', 'bar', 'stack', 'tiled']},
+                                        restore: {show: true},
+                                        saveAsImage: {show: true}
+                                    }
+                                },
+                                xAxis: [
+                                    {
+                                        type: 'category',
+                                        axisTick: {show: false},
+                                        data: ['项目费用']
+                                    }
+                                ],
+                                yAxis: [
+                                    {
+                                        type: 'value'
+                                    }
+                                ],
+                                series: [
+                                    {
+                                        name: '已使用',
+                                        type: 'bar',
+                                        barGap: 0,
+                                        label: labelOption,
+                                        emphasis: {
+                                            focus: 'series'
+                                        },
+                                        data: [use]
+                                    },
+                                    {
+                                        name: '剩余',
+                                        type: 'bar',
+                                        label: labelOption,
+                                        emphasis: {
+                                            focus: 'series'
+                                        },
+                                        data: [last]
+                                    },
+                                    {
+                                        name: '当前单',
+                                        type: 'bar',
+                                        label: labelOption,
+                                        emphasis: {
+                                            focus: 'series'
+                                        },
+                                        data: [uid_use]
+                                    },
+                                ]
+                            };
+
+                            if (option && typeof option === 'object') {
+                                myChart.setOption(option);
+                            }
+                        });
+                    }
+
+
+                }
+            },'json');
+
+
+        } //end_if_2
+
+
+
+        //提交
+        $("#exampleToolbar").on('click',function(){
+            batch();
+        })
+
+
+        function batch(){
+            if(check() == 0){
+                alert('至少选中一条信息!');
+                return false;
+            }
+
+            doBatch(0);
+        }
+
+
+        function check(){
+            var count =0;
+            //判断是否有信息被选中
+            $("input[name='btSelectItem']").each(function(){
+                if($(this).is(":checked")){
+                    count++;
+                }
+            })
+            return count;
+        }
+
+        function doBatch(result){
+            console.log(getSelectRows());
+            var preserveBatch = "{{route('admin.bill.preserveBatch')}}";
+            $.ajax({
+                type: "POST",
+                url:preserveBatch,
+                async: false,
+                cache: false,
+                dataType: "json",
+                data: {_token:"{{csrf_token()}}",id_arr:getSelectRows()},
+                success: function (data) {
+                    if(data.code == 200){
+                        location.href="{{route('admin.bill.index')}}";
+                    }
+                },
+            });
+
+        }
+
+
+        //获取被选中行的runid
+        function getSelectRows(){
+            var runid_arr=[];
+            //获取所有信息的
+            var getSelectRows =$("#preserve").bootstrapTable('getSelections',function(row){
+                return row;
+            })
+            //流实例id
+            for(var i=0,len=getSelectRows.length;i<len;i++){
+                runid_arr.push(getSelectRows[i].id);
+            }
+            return runid_arr;
+        }
+
+    </script>
+
 @endsection

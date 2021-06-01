@@ -11,11 +11,8 @@
     </style>
 </head>
 <body>
-<h3>提单提交成功</h3>
-{{--<img src="https://l" alt="">--}}
-
 <div>
-    你的提单提交成功了!
+    <p>ID号为{{$v}}的提单创建成功!</p>
 </div>
 </body>
 </html>

@@ -53,6 +53,14 @@ Route::group(['prefix'=>'admin','namespace'=>'Admin'],function (){
         Route::get('bill/add','BillController@create')->name('bill.create');
         //添加提单处理
         Route::post('bill/add','BillController@store')->name('bill.store');
+        //添加页面已保存数据
+        Route::post("bill/preserve",'BillController@preserve')->name('bill.preserve');
+        Route::post("bill/preserveBatch",'BillController@preserveBatch')->name('bill.preserveBatch');
+        #添加页面项目费用预览
+        Route::get("bill/costPriview",'BillController@costPriview')->name('bill.costPriview');
+        Route::get("bill/getStatus",'BillController@getStatus')->name('bill.getStatus');
+
+
         //删除提单
         Route::delete("bill/del/{id}","BillController@del")->name('bill.del');
         //修改提单
@@ -124,10 +132,9 @@ Route::group(['prefix'=>'admin','namespace'=>'Admin'],function (){
         Route::get('sys/holiday',"SysController@holiday")->name('sys.holiday');
 
 
+
+
         //邮件
-
-
-
 
         //测试
         Route::get("test/index","TestController@index")->name("test.index");

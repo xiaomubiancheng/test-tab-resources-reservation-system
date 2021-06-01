@@ -16,6 +16,7 @@ class CheckLogin
      */
     public function handle($request, Closure $next)
     {
+
         //用户是否登录检查
         if(!Auth::guard('user')->check()){
             return redirect(url('admin/login'))->withErrors(['error'=>"非法登录"]);

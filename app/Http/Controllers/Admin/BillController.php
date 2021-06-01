@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Models\Bill;
 use Illuminate\Mail\Message;
 use Illuminate\Http\Request;
+use App\Common\Hum\HumPrice;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Mail;
@@ -22,13 +23,14 @@ class BillController extends Controller
      */
     public function index()
     {
-//        $bills = DB::table("bill")
-//            ->select("bill.*","projects.name","pro.name as proname")
-//            ->leftJoin('projects','bill.project_id','=','projects.id')
-//            ->leftJoin('protesttypes as pro', 'bill.ttype','=', 'pro.id')
-//            ->where("is_use",'=', 1)
-//            ->where('is_delete','=', 1)
-//            ->get()->toArray();
+        $bills = DB::table("bill")
+            ->select("bill.*","projects.name","pro.name as proname")
+            ->leftJoin('projects','bill.project_id','=','projects.id')
+            ->leftJoin('protesttypes as pro', 'bill.ttype','=', 'pro.id')
+            ->where("is_use",'=', 1)
+            ->where('is_delete','=', 1)
+            ->orderBy('id','desc')
+            ->get()->toArray();
 
         $billsO = DB::table("bill")
             ->select("bill.*","projects.name","pro.name as proname")
@@ -36,6 +38,7 @@ class BillController extends Controller
             ->leftJoin('protesttypes as pro', 'bill.ttype','=', 'pro.id')
             ->where("is_use",'=', 2)
             ->where('is_delete','=', 1)
+            ->orderBy('id','desc')
             ->get()->toArray();
 
 
@@ -51,9 +54,127 @@ class BillController extends Controller
      */
     public function create()
     {
+        $str = url()->previous();
+        $str = substr($str,strrpos($str,"/")+1);
         $ttypes = DB::table("protesttypes")->pluck('name','id')->toArray();
-        $projects = DB::table("projects")->pluck('name','id')->toArray();
+        $projects_info = DB::table("projects")
+            ->select('id','name')
+            ->where("deleted_at",'=',null)
+            ->get();
+        $projects = array();
+        foreach ($projects_info as $v){
+            $projects[$v->id] = $v->name;
+        }
+
+        if($str == 'index'){
+            DB::table("assist")->update(['project_id'=>0,'status'=>1]);
+        }
         return view('admin.bill.add',compact('ttypes','projects'));
+    }
+
+
+
+    public function getStatus(){
+        $data = DB::table("assist")->select('status','project_id')->first();
+        return ['status'=>0,'data'=>$data];
+    }
+
+    /**
+     * 已保存状态数据
+     */
+    public function preserve(Request $request){
+      $project_id = ($request->only(['project_id']))['project_id'];
+
+
+       $uid = Auth::guard('user')->user()->id;
+       $data =  DB::table("bill")
+           ->select("bill.*","projects.name","pro.name as proname")
+           ->leftJoin('projects','bill.project_id','=','projects.id')
+           ->leftJoin('protesttypes as pro', 'bill.ttype','=', 'pro.id')
+           ->where([
+                ['bill.is_use','=',1],
+                ['bill.created_at','>=',time()-30*60],
+                ['uid','=',$uid],
+                ['bill.project_id','=',$project_id]
+            ])
+           ->get();
+
+       return $this->jsonSuccessData($data);
+    }
+
+    /**
+     * 批量提交 修改提单的状态
+     */
+    public function preserveBatch(Request $request){
+        $data = $request->only(['id_arr']);
+        $id_arrs = $data['id_arr'];
+
+        foreach($id_arrs as $k=>$v){
+
+            if( $billModel = Bill::find($v) ){
+                $email = DB::table("users")->where("id",'=',$billModel->uid)->value('email');
+                $billModel->is_use  = 2;
+                if( $billModel->save()){
+                    //发送邮件
+                    Mail::send('mail.changestatus',compact('v'),function(Message $message) use($email){
+                        //发给谁
+                        $message->to($email);
+                        //主题
+                        $message->subject('提单提交成功!');
+                    });
+                }
+            }else{
+                continue;
+            }
+
+        }
+
+        return $this->jsonSuccessData();
+
+    }
+
+    /**
+     * 项目费用预览
+     */
+    public function costPriview(Request $request){
+        $project_id = ($request->only(['project_id']))['project_id'];
+
+        $project = DB::table('projects')
+            ->select("id","name","dev_budget","os_budget","ota_budget")
+            ->where("deleted_at",'=',null)
+            ->where('id','=',$project_id)
+            ->first();
+        //已使用
+        $bills = DB::table('bill')
+            ->where([
+                ['project_id','=',$project_id]
+            ])->get()->toArray();
+
+
+        $origin = 0;
+        $use = 0;
+        $origin = $project->dev_budget+$project->os_budget+$project->ota_budget;
+        $uid = Auth::guard('user')->user()->id;
+        //当前提单
+        $uid_bills = DB::table('bill')
+            ->where([
+                ['bill.created_at','>=',time()-30*60],
+                ['uid','=',$uid],
+                ['bill.project_id','=',$project_id]
+            ])->get();
+
+        foreach($bills as $k=>$v){
+            $use += round(($v->manpower * (23*1000/12/21.75*7)),2);
+        }
+
+
+        $uid_use =0;
+        foreach($bills as $k=>$v){
+            $uid_use += round(($v->manpower * (23*1000/12/21.75*7)),2);
+        }
+        $last = $origin-$use;
+
+        return ['status'=>0, 'data'=>compact('use','last','uid_use')];
     }
 
     /**
@@ -81,10 +202,6 @@ class BillController extends Controller
         }
 
 
-
-        /**
-         * 2张表
-         */
         $bill = array();
         $bill_list = array();
         $bill['submit_status'] = (int)$arr['submit_status'];
@@ -112,6 +229,7 @@ class BillController extends Controller
         $bill['mostManpower'] = (int)$arr['mostManpower'];
         $bill['overManpower'] = (int)$arr['overManpower'];
         $bill['content'] = $arr['content'];
+        $bill['created_at'] = time();
 
         //从表
         $bill_list['bill_id'] = 0;
@@ -119,453 +237,489 @@ class BillController extends Controller
 //        $bill_list['ttype'] = $ttype;
 //        $bill_list['week_count'] = 0;
 
+        try{
+            DB::beginTransaction();
+            //入库bill 返回ID
+            $id = DB::table("bill")->insertGetId($bill);
 
-        if(DB::table("bill")->insert($bill)){
-            return $this->jsonData(ApiErrDesc::SUCCESS[0],ApiErrDesc::SUCCESS[1]);
+            $bill_list['bill_id'] = $id;
+            if($submit_status == 4){
+                $s_year = substr($arr['starttime'],0,4);
+                $s_month = substr($arr['starttime'],5,2);
+                $s_day = substr($arr['starttime'],8,2);
+                $e_year = substr($arr['endtime'],0,4);
+                $e_month = substr($arr['endtime'],5,2);
+                $e_day = substr($arr['endtime'],8,2);
+            }else{
+                $s_year = substr($arr['auto_starttime'],0,4);
+                $s_month = substr($arr['auto_starttime'],5,2);
+                $s_day = substr($arr['auto_starttime'],8,2);
+                $e_year = substr($arr['auto_endtime'],0,4);
+                $e_month = substr($arr['auto_endtime'],5,2);
+                $e_day = substr($arr['auto_endtime'],8,2);
+            }
+
+            $first_info = DB::table("humtableinit2")->where([
+                ['year','=',$s_year],
+                ['month','=',$s_month],
+                ['begin','<=',$s_day],
+                ['end','>=',$s_day],
+                ['ttid','=',$ttype]
+            ])->first();
+            $first_week_count = $first_info->week_count;
+            $last_info = DB::table("humtableinit2")->where([
+                ['year','=',$e_year],
+                ['month','=',$e_month],
+                ['begin','<=',$e_day],
+                ['end','>=',$e_day],
+                ['ttid','=',$ttype]
+            ])->first();
+            $last_week_count = $last_info->week_count;
+
+            if($submit_status === 1){ //正常非自定义提交
+                $this->Status1($manpower,$first_week_count,$last_week_count,$first_info,$ttype,$s_year,$last_info,$bill_list);
+            }elseif($submit_status === 2){ //顺延
+                $this->Status2($manpower,$first_week_count,$last_week_count,$first_info,$ttype,$s_year,$bill_list);
+            }elseif($submit_status === 3){ //加班
+                $this->Status3($manpower,$first_week_count,$last_week_count,$first_info,$ttype,$s_year,$last_info,$arr,$bill_list);
+            }elseif($submit_status == 4){ //自定义
+                $this->Status4($manpower,$first_week_count,$last_week_count,$first_info,$ttype,$s_year,$last_info,$bill_list);
+            }
+
+            DB::commit();
+
+            #-----email start
+//            $userInfo = DB::table("users")->select('email','depart','is_chargeman')->where("id",'=',$bill['uid'])->first();
+//            $useremail = $userInfo->email;
+//            $cc_email ='';
+//            //当前用户不是组长就查询
+//            if($userInfo->is_chargeman != 1) {
+//                //组长邮件
+//                $cc_email = DB::table("users")->where([
+//                    ["is_chargeman",'=',1],
+//                    ['depart','=',$userInfo->depart]
+//                ])->value('email');
+//            }
+//
+//            Mail::send('mail.billadd',compact('id'),function(Message $message) use($id,$useremail,$cc_email){
+//                //发给谁
+//                $message->to($useremail);
+//                //抄送
+//                if($cc_email){
+//                    $message->cc($cc_email);
+//                }
+//                //主题
+//                $message->subject("提单创建成功!");
+//            });
+            #----email end
+
+            DB::table("assist")->update(['project_id'=>(int)$arr['project'],'status'=>2]);
+
+            return $this->jsonSuccessData();
+        }catch(\Exception $e){
+            echo $e->getMessage();
+            DB::rollBack();
         }
 
+    }
 
-        //**********
-//        try{
-//            DB::beginTransaction();
-//            //入库bill 返回ID
-//            $id = DB::table("bill")->insertGetId($bill);
-//
-//            $bill_list['bill_id'] = $id;
-//            if($submit_status == 4){
-//                $s_year = substr($arr['starttime'],0,4);
-//                $s_month = substr($arr['starttime'],5,2);
-//                $s_day = substr($arr['starttime'],8,2);
-//                $e_year = substr($arr['endtime'],0,4);
-//                $e_month = substr($arr['endtime'],5,2);
-//                $e_day = substr($arr['endtime'],8,2);
-//            }else{
-//                $s_year = substr($arr['auto_starttime'],0,4);
-//                $s_month = substr($arr['auto_starttime'],5,2);
-//                $s_day = substr($arr['auto_starttime'],8,2);
-//                $e_year = substr($arr['auto_endtime'],0,4);
-//                $e_month = substr($arr['auto_endtime'],5,2);
-//                $e_day = substr($arr['auto_endtime'],8,2);
-//            }
-//
-//            $first_info = DB::table("humtableinit2")->where([
-//                ['year','=',$s_year],
-//                ['month','=',$s_month],
-//                ['begin','<=',$s_day],
-//                ['end','>=',$s_day],
-//                ['ttid','=',$ttype]
-//            ])->first();
-//            $first_week_count = $first_info->week_count;
-//            $last_info = DB::table("humtableinit2")->where([
-//                ['year','=',$e_year],
-//                ['month','=',$e_month],
-//                ['begin','<=',$e_day],
-//                ['end','>=',$e_day],
-//                ['ttid','=',$ttype]
-//            ])->first();
-//            $last_week_count = $last_info->week_count;
-//
-//            if($submit_status === 1){ //正常非自定义提交
-//                $re_manpower = $manpower;
-//                for($i=$first_week_count;$i<=$last_week_count;$i++){
-//
-//                    if($i == $first_week_count){
-//                        if($first_info->remain == 0){
-//                            continue;
-//                        }
-//                        if($first_info->remain >= $manpower){
-//                            $bill_list['manpower'] = $manpower;
-//
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败!');
-//                            }
-//
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $manpower)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//
-//                            break;
-//                        }else{
-//                            $bill_list['manpower'] = $first_info->remain;
-//                            $re_manpower = $manpower - $first_info->remain;
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败!');
-//                            }
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $first_info->remain)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//                        }
-//                    }
-//
-//                    if($i>$first_week_count && $i<$last_week_count ){
-//                       $info =  DB::table("humtableinit2")->where([
-//                            ['year','=',$s_year],
-//                            ['ttid','=',$ttype],
-//                            ['week_count', $i]
-//                        ])->first();
-//
-//                        if($info->remain == 0){
-//                            continue;
-//                        }
-//
-//                       if( $info->remain >= $re_manpower ){
-//                           $bill_list['manpower'] = $re_manpower;
-//                           if(!DB::table("bill_slave")->insert($bill_list)){
-//                               throw new \Exception('bill_slave入库失败!');
-//                           }
-//                           if(!DB::table("humtableinit2")->where([
-//                               ['week_count', $i],
-//                               ['ttid','=',$ttype]
-//                           ])->decrement('remain', $re_manpower)){
-//                               throw new \Exception("humtableinit2数据更新失败");
-//                               return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                           }
-//                           break;
-//                       }else{
-//                           $bill_list['manpower'] = $info->remain;
-//                           $re_manpower = $re_manpower - $info->remain;
-//                           if(!DB::table("bill_slave")->insert($bill_list)){
-//                               throw new \Exception('bill_slave入库失败!');
-//                           }
-//                           if(!DB::table("humtableinit2")->where([
-//                               ['week_count', $i],
-//                               ['ttid','=',$ttype]
-//                           ])->decrement('remain', $info->remain)){
-//                               throw new \Exception("humtableinit2数据更新失败");
-//                               return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                           }
-//                       }
-//                    }
-//
-//                    if($i == $last_week_count){
-//                        if($last_info->remain == 0){
-//                            continue;
-//                        }
-//                        if($last_info->remain >= $re_manpower){
-//                            $bill_list['manpower'] = $re_manpower;
-//
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败!');
-//                            }
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $re_manpower)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//                            break;
-//                        }else{
-//                            $bill_list['manpower'] = $last_info->remain;
-//                            $re_manpower = $manpower - $last_info->remain;
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败,提交提交有误!');
-//                            }
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $last_info->remain)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//                        }
-//                    }
-//                } //end_for
-//
-//            }elseif($submit_status === 2){ //顺延
-//
-//                $re_manpower = $manpower;
-//                for($i=$first_week_count;$i<=$last_week_count;$i++){
-//
-//                    if($i == $first_week_count){
-//                        if($first_info->remain == 0){
-//                            continue;
-//                        }
-//                        $bill_list['manpower'] = $first_info->remain;
-//                        $re_manpower = $manpower - $first_info->remain;
-//                        if(!DB::table("bill_slave")->insert($bill_list)){
-//                            throw new \Exception('bill_slave入库失败!');
-//                        }
-//                        if( !DB::table("humtableinit2")->where([
-//                            ['week_count', $i],
-//                            ['ttid','=',$ttype]
-//                        ])->update(['remain'=>0]) ){
-//                            throw new \Exception("humtableinit2数据更新失败");
-//                            return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                        }
-//                    }
-//
-//                    if($i>$first_week_count && $i<$last_week_count ){
-//                        $info =  DB::table("humtableinit2")->where([
-//                            ['year','=',$s_year],
-//                            ['ttid','=',$ttype],
-//                            ['week_count', $i]
-//                        ])->first();
-//
-//                        if($info->remain == 0){
-//                            continue;
-//                        }
-//                        $bill_list['manpower'] = $info->remain;
-//                        $re_manpower = $re_manpower - $info->remain;
-//                        if(!DB::table("bill_slave")->insert($bill_list)){
-//                            throw new \Exception('bill_slave入库失败!');
-//                        }
-//                        if(!DB::table("humtableinit2")->where([
-//                            ['week_count', $i],
-//                            ['ttid','=',$ttype]
-//                        ])->update(['remain'=>0])){
-//                            throw new \Exception("humtableinit2数据更新失败");
-//                            return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                        }
-//                    }
-//
-//                    if($i == $last_week_count){
-//                        $bill_list['manpower'] = $re_manpower;
-//                        if(!DB::table("bill_slave")->insert($bill_list)){
-//                            throw new \Exception('bill_slave入库失败,提交提交有误!');
-//                        }
-//                        if(!DB::table("humtableinit2")->where([
-//                            ['week_count', $i],
-//                            ['ttid','=',$ttype]
-//                        ])->decrement('remain', $re_manpower)){
-//                            throw new \Exception("humtableinit2数据更新失败");
-//                            return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                        }
-//                    }
-//
-//                } //end_for
-//
-//            }elseif($submit_status === 3){ //加班
-//                //减去加班人力
-//                $re_manpower = $manpower - $arr['overManpower'];
-//
-//                for($i=$first_week_count;$i<=$last_week_count;$i++){
-//
-//                    if($i == $first_week_count){
-//                        if($first_info->remain == 0){
-//                            continue;
-//                        }
-//                        $bill_list['manpower'] = $first_info->remain;
-//                        $re_manpower = $re_manpower - $first_info->remain;
-//                        if(!DB::table("bill_slave")->insert($bill_list)){
-//                            throw new \Exception('bill_slave入库失败!');
-//                        }
-//                        if( !DB::table("humtableinit2")->where([
-//                            ['week_count', $i],
-//                            ['ttid','=',$ttype]
-//                        ])->update(['remain'=>0]) ){
-//                            throw new \Exception("humtableinit2数据更新失败");
-//                            return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                        }
-//                    }
-//
-//                    if($i>$first_week_count && $i<$last_week_count ){
-//                        $info =  DB::table("humtableinit2")->where([
-//                            ['year','=',$s_year],
-//                            ['ttid','=',$ttype],
-//                            ['week_count', $i]
-//                        ])->first();
-//
-//                        if($info->remain == 0){
-//                            continue;
-//                        }
-//
-//                        if( $info->remain >= $re_manpower ){
-//                            $bill_list['manpower'] = $re_manpower;
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败!');
-//                            }
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $re_manpower)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//                            break;
-//                        }else{
-//                            $bill_list['manpower'] = $info->remain;
-//                            $re_manpower = $re_manpower - $info->remain;
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败!');
-//                            }
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $info->remain)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//                        }
-//                    }
-//
-//                    if($i == $last_week_count){
-//                        if($last_info->remain == 0){
-//                            continue;
-//                        }
-//                        if($last_info->remain >= $re_manpower){
-//                            $bill_list['manpower'] = $re_manpower;
-//
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败!');
-//                            }
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $re_manpower)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//                            break;
-//                        }else{
-//                            $bill_list['manpower'] = $last_info->remain;
-//                            $re_manpower = $manpower - $last_info->remain;
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败,提交提交有误!');
-//                            }
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $last_info->remain)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//                        }
-//                    }
-//                }
-//
-//
-//            }elseif($submit_status == 4){ //自定义
-//                $re_manpower = $manpower;
-//                for($i=$first_week_count;$i<=$last_week_count;$i++){
-//
-//                    if($i == $first_week_count){
-//                        if($first_info->remain == 0){
-//                            continue;
-//                        }
-//                        if($first_info->remain >= $manpower){
-//                            $bill_list['manpower'] = $manpower;
-//
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败!');
-//                            }
-//
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $manpower)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//
-//                            break;
-//                        }else{
-//                            $bill_list['manpower'] = $first_info->remain;
-//                            $re_manpower = $manpower - $first_info->remain;
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败!');
-//                            }
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $first_info->remain)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//                        }
-//                    }
-//
-//                    if($i>$first_week_count && $i<$last_week_count ){
-//                        $info =  DB::table("humtableinit2")->where([
-//                            ['year','=',$s_year],
-//                            ['ttid','=',$ttype],
-//                            ['week_count', $i]
-//                        ])->first();
-//
-//                        if($info->remain == 0){
-//                            continue;
-//                        }
-//
-//                        if( $info->remain >= $re_manpower ){
-//                            $bill_list['manpower'] = $re_manpower;
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败!');
-//                            }
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $re_manpower)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//                            break;
-//                        }else{
-//                            $bill_list['manpower'] = $info->remain;
-//                            $re_manpower = $re_manpower - $info->remain;
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败!');
-//                            }
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $info->remain)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//                        }
-//                    }
-//
-//                    if($i == $last_week_count){
-//                        if($last_info->remain == 0){
-//                            continue;
-//                        }
-//                        if($last_info->remain >= $re_manpower){
-//                            $bill_list['manpower'] = $re_manpower;
-//
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败!');
-//                            }
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $re_manpower)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//                            break;
-//                        }else{
-//                            $bill_list['manpower'] = $last_info->remain;
-//                            $re_manpower = $manpower - $last_info->remain;
-//                            if(!DB::table("bill_slave")->insert($bill_list)){
-//                                throw new \Exception('bill_slave入库失败,提交提交有误!');
-//                            }
-//                            if(!DB::table("humtableinit2")->where([
-//                                ['week_count', $i],
-//                                ['ttid','=',$ttype]
-//                            ])->decrement('remain', $last_info->remain)){
-//                                throw new \Exception("humtableinit2数据更新失败");
-//                                return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
-//                            }
-//                        }
-//                    }
-//                } //end_for
-//            }
-//
-//            DB::commit();
-//            return ['status'=>0, 'msg'=>'提交成功!'];
-//        }catch(\Exception $e){
-//            echo $e->getMessage();
-//            DB::rollBack();
-//        }
 
+
+    public function Status1($manpower,$first_week_count,$last_week_count,$first_info,$ttype,$s_year,$last_info,$bill_list){
+        $re_manpower = $manpower;
+        for($i=$first_week_count;$i<=$last_week_count;$i++){
+
+            if($i == $first_week_count){
+                if($first_info->remain == 0){
+                    continue;
+                }
+                if($first_info->remain >= $manpower){
+                    $bill_list['manpower'] = $manpower;
+
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败!');
+                    }
+
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $manpower)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+
+                    break;
+                }else{
+                    $bill_list['manpower'] = $first_info->remain;
+                    $re_manpower = $manpower - $first_info->remain;
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $first_info->remain)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                }
+            }
+
+            if($i>$first_week_count && $i<$last_week_count ){
+                $info =  DB::table("humtableinit2")->where([
+                    ['year','=',$s_year],
+                    ['ttid','=',$ttype],
+                    ['week_count', $i]
+                ])->first();
+
+                if($info->remain == 0){
+                    continue;
+                }
+
+                if( $info->remain >= $re_manpower ){
+                    $bill_list['manpower'] = $re_manpower;
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $re_manpower)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                    break;
+                }else{
+                    $bill_list['manpower'] = $info->remain;
+                    $re_manpower = $re_manpower - $info->remain;
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $info->remain)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                }
+            }
+
+            if($i == $last_week_count){
+                if($last_info->remain == 0){
+                    continue;
+                }
+                if($last_info->remain >= $re_manpower){
+                    $bill_list['manpower'] = $re_manpower;
+
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $re_manpower)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                    break;
+                }else{
+                    $bill_list['manpower'] = $last_info->remain;
+                    $re_manpower = $manpower - $last_info->remain;
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败,提交提交有误!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $last_info->remain)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                }
+            }
+        } //end_for
+    }
+
+
+    public function Status2($manpower,$first_week_count,$last_week_count,$first_info,$ttype,$s_year,$bill_list){
+        $re_manpower = $manpower;
+        for($i=$first_week_count;$i<=$last_week_count;$i++){
+
+            if($i == $first_week_count){
+                if($first_info->remain == 0){
+                    continue;
+                }
+                $bill_list['manpower'] = $first_info->remain;
+                $re_manpower = $manpower - $first_info->remain;
+                if(!DB::table("bill_slave")->insert($bill_list)){
+                    throw new \Exception('bill_slave入库失败!');
+                }
+                if( !DB::table("humtableinit2")->where([
+                    ['week_count', $i],
+                    ['ttid','=',$ttype]
+                ])->update(['remain'=>0]) ){
+                    throw new \Exception("humtableinit2数据更新失败");
+                    return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                }
+            }
+
+            if($i>$first_week_count && $i<$last_week_count ){
+                $info =  DB::table("humtableinit2")->where([
+                    ['year','=',$s_year],
+                    ['ttid','=',$ttype],
+                    ['week_count', $i]
+                ])->first();
+
+                if($info->remain == 0){
+                    continue;
+                }
+                $bill_list['manpower'] = $info->remain;
+                $re_manpower = $re_manpower - $info->remain;
+                if(!DB::table("bill_slave")->insert($bill_list)){
+                    throw new \Exception('bill_slave入库失败!');
+                }
+                if(!DB::table("humtableinit2")->where([
+                    ['week_count', $i],
+                    ['ttid','=',$ttype]
+                ])->update(['remain'=>0])){
+                    throw new \Exception("humtableinit2数据更新失败");
+                    return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                }
+            }
+
+            if($i == $last_week_count){
+                $bill_list['manpower'] = $re_manpower;
+                if(!DB::table("bill_slave")->insert($bill_list)){
+                    throw new \Exception('bill_slave入库失败,提交提交有误!');
+                }
+                if(!DB::table("humtableinit2")->where([
+                    ['week_count', $i],
+                    ['ttid','=',$ttype]
+                ])->decrement('remain', $re_manpower)){
+                    throw new \Exception("humtableinit2数据更新失败");
+                    return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                }
+            }
+
+        } //end_for
+    }
+
+    public function Status3($manpower,$first_week_count,$last_week_count,$first_info,$ttype,$s_year,$last_info,$arr,$bill_list){
+//减去加班人力
+        $re_manpower = $manpower - $arr['overManpower'];
+
+        for($i=$first_week_count;$i<=$last_week_count;$i++){
+
+            if($i == $first_week_count){
+                if($first_info->remain == 0){
+                    continue;
+                }
+                $bill_list['manpower'] = $first_info->remain;
+                $re_manpower = $re_manpower - $first_info->remain;
+                if(!DB::table("bill_slave")->insert($bill_list)){
+                    throw new \Exception('bill_slave入库失败!');
+                }
+                if( !DB::table("humtableinit2")->where([
+                    ['week_count', $i],
+                    ['ttid','=',$ttype]
+                ])->update(['remain'=>0]) ){
+                    throw new \Exception("humtableinit2数据更新失败");
+                    return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                }
+            }
+
+            if($i>$first_week_count && $i<$last_week_count ){
+                $info =  DB::table("humtableinit2")->where([
+                    ['year','=',$s_year],
+                    ['ttid','=',$ttype],
+                    ['week_count', $i]
+                ])->first();
+
+                if($info->remain == 0){
+                    continue;
+                }
+
+                if( $info->remain >= $re_manpower ){
+                    $bill_list['manpower'] = $re_manpower;
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $re_manpower)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                    break;
+                }else{
+                    $bill_list['manpower'] = $info->remain;
+                    $re_manpower = $re_manpower - $info->remain;
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $info->remain)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                }
+            }
+
+            if($i == $last_week_count){
+                if($last_info->remain == 0){
+                    continue;
+                }
+                if($last_info->remain >= $re_manpower){
+                    $bill_list['manpower'] = $re_manpower;
+
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $re_manpower)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                    break;
+                }else{
+                    $bill_list['manpower'] = $last_info->remain;
+                    $re_manpower = $manpower - $last_info->remain;
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败,提交提交有误!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $last_info->remain)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                }
+            }
+        }
+    }
+
+
+    public function Status4($manpower,$first_week_count,$last_week_count,$first_info,$ttype,$s_year,$last_info,$bill_list){
+        $re_manpower = $manpower;
+        for($i=$first_week_count;$i<=$last_week_count;$i++){
+
+            if($i == $first_week_count){
+                if($first_info->remain == 0){
+                    continue;
+                }
+                if($first_info->remain >= $manpower){
+                    $bill_list['manpower'] = $manpower;
+
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败!');
+                    }
+
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $manpower)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+
+                    break;
+                }else{
+                    $bill_list['manpower'] = $first_info->remain;
+                    $re_manpower = $manpower - $first_info->remain;
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $first_info->remain)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                }
+            }
+
+            if($i>$first_week_count && $i<$last_week_count ){
+                $info =  DB::table("humtableinit2")->where([
+                    ['year','=',$s_year],
+                    ['ttid','=',$ttype],
+                    ['week_count', $i]
+                ])->first();
+
+                if($info->remain == 0){
+                    continue;
+                }
+
+                if( $info->remain >= $re_manpower ){
+                    $bill_list['manpower'] = $re_manpower;
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $re_manpower)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                    break;
+                }else{
+                    $bill_list['manpower'] = $info->remain;
+                    $re_manpower = $re_manpower - $info->remain;
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $info->remain)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                }
+            }
+
+            if($i == $last_week_count){
+                if($last_info->remain == 0){
+                    continue;
+                }
+                if($last_info->remain >= $re_manpower){
+                    $bill_list['manpower'] = $re_manpower;
+
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $re_manpower)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                    break;
+                }else{
+                    $bill_list['manpower'] = $last_info->remain;
+                    $re_manpower = $manpower - $last_info->remain;
+                    if(!DB::table("bill_slave")->insert($bill_list)){
+                        throw new \Exception('bill_slave入库失败,提交提交有误!');
+                    }
+                    if(!DB::table("humtableinit2")->where([
+                        ['week_count', $i],
+                        ['ttid','=',$ttype]
+                    ])->decrement('remain', $last_info->remain)){
+                        throw new \Exception("humtableinit2数据更新失败");
+                        return ['status'=>1000, 'msg'=>'humtableinit2数据更新失败'];
+                    }
+                }
+            }
+        } //end_for
     }
 
 
@@ -1067,9 +1221,11 @@ class BillController extends Controller
                 ->where("deleted_at",'=',null)
                 ->get()->toArray();
 
-            $bills = DB::table('bill')->where([
-                ['is_use','=', 2]
-            ])->get()->toArray();
+            $bills = DB::table('bill')
+//                ->where([
+//                    ['is_use','=', 2]
+//                ])
+                ->get()->toArray();
 
             $pcrs = DB::table("pcr")->select('id','project_id','cost')->get()->toArray();
 
@@ -1127,8 +1283,73 @@ class BillController extends Controller
             return ['status'=>0, 'data'=>compact('pros','data1','data2', 'data3')];
         }
 
-        if( $postData['staType'] == 1 ){
+        //结算
+        if( $postData['staType'] == 2 ){
+            $projects = DB::table('projects')
+                ->select("id","name","dev_budget","os_budget","ota_budget")
+                ->where("deleted_at",'=',null)
+                ->get()->toArray();
 
+            $bills = DB::table('bill')
+//                ->where([
+//                    ['is_use','=', 2]
+//                ])
+                ->get()->toArray();
+
+            $pcrs = DB::table("pcr")->select('id','project_id','cost')->get()->toArray();
+
+
+            $pcrs_new = array();
+            foreach($pcrs as $pcr){
+                $pcrs_new[$pcr->project_id]['sum'] = ($pcrs_new[$pcr->project_id]['sum']??0) + $pcr->cost;
+            }
+
+            //已使用
+            $bill_new = array();
+            foreach($bills as $k=>$v){
+                $bill_new[$v->id] = $v->manpower * 200;
+            }
+
+            $data = array();
+            foreach($projects as $val){
+                $data[$val->id]['unused'] = 0;
+                $data[$val->id]['used'] = 0;
+                $data[$val->id]['over'] = 0;
+                $pcr_cost = 0;
+                if(array_key_exists($val->id, $pcrs_new)){
+                    $pcr_cost = (int)$pcrs_new[$val->id]['sum'];
+                }
+                $pro_sum = $val->dev_budget + $val->os_budget + $val->ota_budget + $pcr_cost; //预算 + pcr
+
+                if(empty($bill_new)){
+                    $data[$val->id]['unused'] = $pro_sum;
+                }else{
+                    foreach($bill_new as $bk=>$bv){
+                        if($val->id == $bk){
+                            if($pro_sum >= $bv){
+                                $data[$val->id]['unused'] = $pro_sum - $bv;
+                                $data[$val->id]['used'] = $bv;
+                            }else{
+                                $data[$val->id]['used'] = $bv;
+                                $data[$val->id]['over'] = $bv - $pro_sum;
+                            }
+                            unset($bill_new[$bk]);
+                        }
+                    }
+                }
+
+            }
+
+            $data1 = [];//已使用
+            $data2 = []; //未使用
+            $data3 = []; //超出
+            $pros = []; //项目
+
+            $pros = array_column($projects,'name');
+            $data2 = array_column($data,'unused');
+            $data1 = array_column($data,'used');
+            $data3 = array_column($data,'over');
+            return ['status'=>0, 'data'=>compact('pros','data1','data2', 'data3')];
         }
 
 
